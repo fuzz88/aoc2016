@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::fs;
 
 // lets use Point for point coordinates
+// will use this in HashSet to find already visited point
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 struct Point {
     x: i32,
@@ -23,22 +24,25 @@ enum Dir {
     L,
     R,
 }
+
 #[derive(Debug)]
 struct Instr {
     dir: Dir,
     length: u32,
 }
 
+// use this as iterator for all the points we visiting following instructions
 struct EasterBunnyRecruitingDocument {
     path: Vec<Instr>,
     index: usize,
-    azimut: i32, //angle, 0 - North, 180 - South, 90 - West, 270 - East
+    azimut: i32, //angle, clockwise,  0 - North, 90 - East, 180 - South, 270 - West, 
     stand_at: Point,
     new_instr: bool,
 }
 
 impl EasterBunnyRecruitingDocument {
     fn new(path: &str) -> EasterBunnyRecruitingDocument {
+        // parsing path to list of instructions
         let path: Vec<Instr> = path
             .split(" ")
             .map(|instruction| {
@@ -53,6 +57,7 @@ impl EasterBunnyRecruitingDocument {
                 }
             })
             .collect();
+
         EasterBunnyRecruitingDocument {
             path,
             index: 0,
@@ -68,7 +73,7 @@ impl Iterator for EasterBunnyRecruitingDocument {
 
     // let this give us all points in between
     fn next(&mut self) -> Option<Self::Item> {
-        // if this last instruction -- stop iteration
+        // if this the last instruction -- stop iteration
         if self.index == self.path.len() {
             return None;
         }
@@ -88,7 +93,7 @@ impl Iterator for EasterBunnyRecruitingDocument {
                 self.azimut -= 360;
             }
         }
-        // move one atomic step towards the give azimut
+        // move one atomic step towards the given azimut
         match self.azimut {
             0 => {
                 self.stand_at.y -= 1 as i32;
@@ -107,9 +112,9 @@ impl Iterator for EasterBunnyRecruitingDocument {
         // same azimut, smaller length
         curr_instr.length -= 1;
         self.new_instr = false;
-        // checks if current instruction is fully exhausted
+        // checks current instruction is fully exhausted
         if curr_instr.length == 0 {
-            // if fully exhausted then prepare next instruction
+            // then prepare next instruction
             self.new_instr = true;
             self.index += 1;
         }
@@ -129,14 +134,15 @@ fn main() {
         .to_string();
 
     for path in input.lines() {
-        let mut points = HashSet::new();
-        let ebrd = EasterBunnyRecruitingDocument::new(path);
-        for next_point in ebrd {
-            if points.contains(&next_point) {
+        let mut visited_points = HashSet::new();
+        let all_the_points_through_the_path = EasterBunnyRecruitingDocument::new(path);
+        for next_point in all_the_points_through_the_path {
+            if visited_points.contains(&next_point) {
+                // first already visited
                 println!("dist = {}", manhattan_distance(next_point));
                 break;
             }
-            points.insert(next_point);
+            visited_points.insert(next_point);
         }
     }
 }
