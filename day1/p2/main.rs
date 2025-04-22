@@ -14,7 +14,7 @@ struct Point {
 }
 
 impl Point {
-    fn new() -> Point {
+    fn new() -> Self {
         Point { x: 0, y: 0 }
     }
 }
@@ -41,7 +41,7 @@ struct EasterBunnyRecruitingDocument {
 }
 
 impl EasterBunnyRecruitingDocument {
-    fn new(path: &str) -> EasterBunnyRecruitingDocument {
+    fn new(path: &str) -> Self {
         // parsing path to list of instructions
         let path: Vec<Instr> = path
             .split(" ")
@@ -58,7 +58,7 @@ impl EasterBunnyRecruitingDocument {
             })
             .collect();
 
-        EasterBunnyRecruitingDocument {
+        Self {
             path,
             index: 0,
             azimut: 0,
