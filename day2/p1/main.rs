@@ -6,15 +6,19 @@ fn main() {
     println!("--- Day 2: Bathroom Security ---");
 
     let args: Vec<String> = env::args().collect();
+
     if args.len() < 2 {
         eprintln!("ERROR: no input file");
         return;
     }
+
     let input_filename = &args[1];
+    let input_data = read_input(input_filename);
+
     println!(
         "{}",
         solve(
-            input_filename,
+            &input_data,
             next_position_p1,
             Pos {
                 x: 1,
@@ -24,10 +28,11 @@ fn main() {
             10
         )
     );
+
     println!(
         "{:x}",
         solve(
-            input_filename,
+            &input_data,
             next_position_p2,
             Pos {
                 x: 0,
@@ -39,11 +44,11 @@ fn main() {
     );
 }
 
-fn solve(filename: &str, next_position: fn(&Pos, &Instr) -> Pos, start_pos: Pos, base: u32) -> u32 {
+fn solve(instr_lines: &Vec<Vec<Instr>>, next_position: fn(&Pos, &Instr) -> Pos, start_pos: Pos, base: u32) -> u32 {
     let mut curr_pos = start_pos;
-    let instr_lines = read_input(filename);
     let instr_count = instr_lines.len();
     let mut curr_power = instr_count;
+
     instr_lines
         .iter()
         .map(|instr_line| {
