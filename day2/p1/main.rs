@@ -68,7 +68,7 @@ fn next_position_p2(p: &Pos, instr: &Instr) -> Pos {
                 _ => unreachable!("ERROR: wrong y"),
             },
         },
-        Instr::Down if p.y != 4 && (p.y <= 2 || (p.x <= 5 - p.y && p.x >= p.y - 1)) => Pos {
+        Instr::Down if p.y != 4 && (p.y <= 1 || (p.x <= 5 - p.y && p.x >= p.y - 1)) => Pos {
             x: p.x,
             y: p.y + 1,
             digit: match p.y {
