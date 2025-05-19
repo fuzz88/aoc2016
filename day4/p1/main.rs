@@ -53,7 +53,7 @@ fn decode_cipher(record: &Record) -> String {
 fn solve_p1(records: &Vec<Record>) -> u32 {
     records
         .iter()
-        .map(|reirrd| match sector_id_if_valid(record) {
+        .map(|record| match sector_id_if_valid(record) {
             Some(id) => id,
             None => 0,
         })
