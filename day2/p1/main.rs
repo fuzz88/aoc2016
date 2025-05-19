@@ -1,6 +1,5 @@
-use std::convert::TryInto;
 use std::env;
-use std::fs::read_to_string;
+use std::fs;
 
 fn main() {
     println!("--- Day 2: Bathroom Security ---");
@@ -44,10 +43,15 @@ fn main() {
     );
 }
 
-fn solve(instr_lines: &Vec<Vec<Instr>>, next_position: fn(&Pos, &Instr) -> Pos, start_pos: Pos, base: u32) -> u32 {
+fn solve(
+    instr_lines: &Vec<Vec<Instr>>,
+    next_position: fn(&Pos, &Instr) -> Pos,
+    start_pos: Pos,
+    base: u32,
+) -> u32 {
     let mut curr_pos = start_pos;
     let instr_count = instr_lines.len();
-    let mut curr_power = instr_count;
+    let mut curr_power = instr_count as u32;
 
     instr_lines
         .iter()
@@ -57,9 +61,9 @@ fn solve(instr_lines: &Vec<Vec<Instr>>, next_position: fn(&Pos, &Instr) -> Pos, 
                 curr_pos = next_position(&curr_pos, next_instr);
             }
             curr_power -= 1;
-            curr_pos.digit * u32::pow(base, curr_power.try_into().unwrap())
+            curr_pos.digit * u32::pow(base, curr_power)
         })
-        .sum::<u32>()
+        .sum()
 }
 
 fn next_position_p2(p: &Pos, instr: &Instr) -> Pos {
@@ -131,7 +135,7 @@ fn next_position_p1(p: &Pos, instr: &Instr) -> Pos {
 }
 
 fn read_input(filename: &str) -> Vec<Vec<Instr>> {
-    read_to_string(filename)
+    fs::read_to_string(filename)
         .unwrap()
         .lines()
         .map(|line| {
@@ -148,14 +152,12 @@ fn read_input(filename: &str) -> Vec<Vec<Instr>> {
         .collect()
 }
 
-#[derive(Debug)]
 struct Pos {
     x: i8,
     y: i8,
     digit: u32,
 }
 
-#[derive(Debug)]
 enum Instr {
     Up,
     Down,
