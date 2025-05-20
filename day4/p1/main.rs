@@ -67,10 +67,10 @@ fn solve_p1(records: &Vec<RoomRecord>) -> u32 {
 }
 
 fn sector_id_if_valid(record: &RoomRecord) -> Option<u32> {
-    if record.checksum == calculate_checksum(record) {
-        return Some(record.sector_id);
+    match record.checksum == calculate_checksum(record) {
+        true => Some(record.sector_id),
+        false => None,
     }
-    None
 }
 
 fn calculate_checksum(record: &RoomRecord) -> String {
