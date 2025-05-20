@@ -1,5 +1,4 @@
 use md5::{compute, Digest};
-use std::io::{stdout, Write};
 
 mod md5;
 

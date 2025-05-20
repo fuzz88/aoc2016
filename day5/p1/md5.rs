@@ -27,8 +27,6 @@
 // The implementation is based on:
 // https://www.ietf.org/rfc/rfc1321.txt
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 #[cfg(feature = "std")]
 use std as core;
 
