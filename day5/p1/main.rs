@@ -1,7 +1,7 @@
-use lib::{compute, Digest};
+use md5::{compute, Digest};
 use std::io::{stdout, Write};
 
-mod lib;
+mod md5;
 
 fn main() {
     println!("--- Day 5: How About a Nice Game of Chess? ---");
