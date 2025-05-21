@@ -6,18 +6,18 @@ fn main() {
     println!("--- Day 5: How About a Nice Game of Chess? ---");
 
     let door_id = String::from("ffykfhsq");
+    let mut suffix = 0;
 
     let mut password: u64 = 0;
-    let mut second_password: u64 = 0;
-    let mut digits = [false; 8];
-
-    let mut idx = 0;
     let mut count = 8;
+
+    let mut second_password: u64 = 0;
     let mut second_count = 0;
+    let mut digits = [false; 8];
 
     loop {
         let mut to_hash = door_id.clone();
-        to_hash.push_str(&idx.to_string());
+        to_hash.push_str(&suffix.to_string());
         let hash = compute(to_hash);
         if good(&hash) {
             println!("{:x}", hash);
@@ -40,7 +40,7 @@ fn main() {
                 break;
             }
         }
-        idx += 1;
+        suffix += 1;
     }
     println!("{:08x}", password);
     println!("{:08x}", second_password);
