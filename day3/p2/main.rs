@@ -10,7 +10,7 @@ fn main() {
     for line in fs::read_to_string("input.txt").unwrap().lines() {
         let nums: Vec<u32> = line
             .split_whitespace()
-            .map(|num| num.parse::<u32>().unwrap())
+            .map(|num| num.parse().unwrap())
             .collect();
 
         triplet[0][idx] = nums[0];
