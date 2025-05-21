@@ -39,19 +39,19 @@ fn decode(messages: &Vec<String>) -> (String, String) {
     let mut results = (String::new(), String::new());
 
     for counter in counters {
-        let (most_common_char, _) = counter
+        let (correct, _) = counter
             .iter()
-            .max_by_key(|(_a, b)| **b)
-            .expect("expecting not empty iterator");
+            .max_by_key(|(_key, value)| **value)
+            .expect("not an empty iterator");
 
-        results.0.push(*most_common_char);
+        results.0.push(*correct);
 
-        let (least_common_char, _) = counter
+        let (correct, _) = counter
             .iter()
-            .min_by_key(|(_a, b)| **b)
-            .expect("expecting not empty iterator");
+            .min_by_key(|(_key, value)| **value)
+            .expect("not an empty iterator");
 
-        results.1.push(*least_common_char);
+        results.1.push(*correct);
     }
 
     results
