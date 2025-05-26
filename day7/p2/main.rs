@@ -32,7 +32,6 @@ fn solve(ips: &Vec<String>) -> u32 {
 }
 
 fn check_ssl(ip: &str) -> u32 {
-    //println!("-----");
     let mut in_brackets: Vec<String> = vec![];
     let mut out_brackets: Vec<String> = vec![];
 
@@ -40,7 +39,7 @@ fn check_ssl(ip: &str) -> u32 {
     let mut idx: usize = 0;
     let mut last: usize = 0;
 
-    // devide ip into two arrays of strings
+    // devide ip into two arrays of substrings: out and in brackets
     loop {
         if ip_bytes[idx] == b'[' && idx != last {
             out_brackets.push(ip[last..idx].to_string());
@@ -58,30 +57,24 @@ fn check_ssl(ip: &str) -> u32 {
     }
 
     let mut matches: HashSet<(u8, u8)> = HashSet::new();
+
+    // sliding window for "out of bracket" substrings
     for s in out_brackets {
-        //sliding window for out of bracket strings
         for w in s.as_bytes().windows(3) {
             if let Some(m) = check_aba(w) {
                 matches.insert(m);
             }
         }
     }
-    //println!("{:?}", matches);
 
-    if matches.iter().any(|m| {
-        for s in &in_brackets {
-            //wtf? how chain this to line below?
-            if s.as_bytes().windows(3).any(|w| check_bab(w, *m)) {
-                return true;
-            }
-        }
-        false
+    // check every "out of bracket" match against "in brackets" substring
+    match matches.iter().any(|m| {
+        in_brackets
+            .iter()
+            .any(|s| s.as_bytes().windows(3).any(|w| check_bab(w, *m)))
     }) {
-        //println!("supports");
-        1
-    } else {
-        //println!("not supports");
-        0
+        true => 1,
+        false => 0,
     }
 }
 
@@ -93,7 +86,5 @@ fn check_aba(b: &[u8]) -> Option<(u8, u8)> {
 }
 
 fn check_bab(b: &[u8], p: (u8, u8)) -> bool {
-    //println!("{:?}", p);
-    //println!("{:?}", b);
     b[0] == b[2] && b[0] == p.1 && b[1] == p.0
 }
