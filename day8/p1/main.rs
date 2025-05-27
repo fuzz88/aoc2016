@@ -6,14 +6,13 @@ fn main() {
         .expect("expecting input file as command line argument");
 
     let commands = read_input(&input_file);
-
     let mut screen = Screen::new(50, 6);
 
-    for command in &commands {
-        screen.process(&command);
-    }
+    screen.process(&commands);
 
+    println!();
     screen.print();
+
     println!("{}", screen.lit_count());
 }
 
@@ -90,8 +89,10 @@ impl Screen {
         println!();
     }
 
-    fn process(&mut self, cmd: &Command) {
-        cmd.apply(self);
+    fn process(&mut self, commands: &Vec<Command>) {
+        for command in commands {
+            command.apply(self);
+        }
     }
 
     fn lit_count(&self) -> u32 {
