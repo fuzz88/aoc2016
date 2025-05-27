@@ -105,6 +105,42 @@ impl Screen {
             })
             .sum()
     }
+
+    fn shift_row(&mut self, index: usize, count: usize) {
+        for _ in 0..count {
+            let mut tmp_pixels: Vec<char> = vec![];
+            for idx in 0..self.width {
+                tmp_pixels.push(self.pixels[index * self.width + idx]);
+            }
+
+            for idx in 0..self.width {
+                let idx2 = (idx + 1) % self.width;
+                self.pixels[index * self.width + idx2] = tmp_pixels[idx];
+            }
+        }
+    }
+
+    fn shift_column(&mut self, index: usize, count: usize) {
+        for _ in 0..count {
+            let mut tmp_pixels: Vec<char> = vec![];
+            for shift in 0..self.height {
+                tmp_pixels.push(self.pixels[shift * self.width + index]);
+            }
+
+            for shift in 0..self.height {
+                let shift2 = (shift + 1) % self.height;
+                self.pixels[shift2 * self.width + index] = tmp_pixels[shift];
+            }
+        }
+    }
+
+    fn rect(&mut self, width: usize, height: usize) {
+        for shift in 0..height {
+            for idx in 0..width {
+                self.pixels[shift * self.width + idx] = '#';
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -130,52 +166,20 @@ impl Command {
     fn apply(&self, screen: &mut Screen) {
         match self {
             Command::Rect { width, height } => {
-                for shift in 0..*height {
-                    for idx in 0..*width {
-                        screen.pixels[shift * screen.width + idx] = '#';
-                    }
-                }
+                screen.rect(*width, *height);
             }
             Command::Rotate {
                 direction,
                 index,
                 count,
-            } => {
-                match direction {
-                    Direction::Column => {
-                        let mut n = *count;
-                        while n != 0 {
-                            let mut tmp_pixels: Vec<char> = vec![];
-                            //saving pixels for shifting
-                            for shift in 0..screen.height {
-                                tmp_pixels.push(screen.pixels[shift * screen.width + index]);
-                            }
-                            //shift saved pixels so they dont overwrite themselvs
-                            for shift in 0..screen.height {
-                                let shift2 = (shift + 1) % screen.height;
-                                screen.pixels[shift2 * screen.width + index] = tmp_pixels[shift];
-                            }
-                            //shift `count` times
-                            n -= 1;
-                        }
-                    }
-                    Direction::Row => {
-                        let mut n = *count;
-                        while n != 0 {
-                            let mut tmp_pixels: Vec<char> = vec![];
-                            for idx in 0..screen.width {
-                                tmp_pixels.push(screen.pixels[index * screen.width + idx]);
-                            }
-
-                            for idx in 0..screen.width {
-                                let idx2 = (idx + 1) % screen.width;
-                                screen.pixels[index * screen.width + idx2] = tmp_pixels[idx];
-                            }
-                            n -= 1;
-                        }
-                    }
+            } => match direction {
+                Direction::Column => {
+                    screen.shift_column(*index, *count);
                 }
-            }
+                Direction::Row => {
+                    screen.shift_row(*index, *count);
+                }
+            },
         }
     }
 }
