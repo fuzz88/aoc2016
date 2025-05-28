@@ -106,38 +106,46 @@ impl Screen {
             .sum()
     }
 
-    fn shift_row(&mut self, index: usize, count: usize) {
-        for _ in 0..count {
+    fn shift_row(&mut self, row: usize, shift_count: usize) {
+        for _ in 0..shift_count {
             let mut tmp_pixels: Vec<char> = vec![];
-            for idx in 0..self.width {
-                tmp_pixels.push(self.pixels[index * self.width + idx]);
+            for col in 0..self.width {
+                let idx = row * self.width + col;
+
+                tmp_pixels.push(self.pixels[idx]);
             }
 
-            for idx in 0..self.width {
-                let idx2 = (idx + 1) % self.width;
-                self.pixels[index * self.width + idx2] = tmp_pixels[idx];
+            for col in 0..self.width {
+                let next_col = (col + 1) % self.width;
+                let idx = row * self.width + next_col;
+
+                self.pixels[idx] = tmp_pixels[col];
             }
         }
     }
 
-    fn shift_column(&mut self, index: usize, count: usize) {
-        for _ in 0..count {
+    fn shift_col(&mut self, col: usize, shift_count: usize) {
+        for _ in 0..shift_count {
             let mut tmp_pixels: Vec<char> = vec![];
-            for shift in 0..self.height {
-                tmp_pixels.push(self.pixels[shift * self.width + index]);
+            for row in 0..self.height {
+                let idx = row * self.width + col;
+
+                tmp_pixels.push(self.pixels[idx]);
             }
 
-            for shift in 0..self.height {
-                let shift2 = (shift + 1) % self.height;
-                self.pixels[shift2 * self.width + index] = tmp_pixels[shift];
+            for row in 0..self.height {
+                let next_row = (row + 1) % self.height;
+                let idx = next_row * self.width + col;
+
+                self.pixels[idx] = tmp_pixels[row];
             }
         }
     }
 
     fn rect(&mut self, width: usize, height: usize) {
-        for shift in 0..height {
-            for idx in 0..width {
-                self.pixels[shift * self.width + idx] = '#';
+        for row in 0..height {
+            for col in 0..width {
+                self.pixels[row * self.width + col] = '#';
             }
         }
     }
@@ -165,21 +173,21 @@ enum Command {
 impl Command {
     fn apply(&self, screen: &mut Screen) {
         match self {
-            Command::Rect { width, height } => {
-                screen.rect(*width, *height);
-            }
             Command::Rotate {
                 direction,
                 index,
                 count,
             } => match direction {
                 Direction::Column => {
-                    screen.shift_column(*index, *count);
+                    screen.shift_col(*index, *count);
                 }
                 Direction::Row => {
                     screen.shift_row(*index, *count);
                 }
             },
+            Command::Rect { width, height } => {
+                screen.rect(*width, *height);
+            }
         }
     }
 }
