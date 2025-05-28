@@ -151,13 +151,11 @@ impl Screen {
     }
 }
 
-#[derive(Debug)]
 enum Direction {
     Column,
     Row,
 }
 
-#[derive(Debug)]
 enum Command {
     Rect {
         width: usize,
