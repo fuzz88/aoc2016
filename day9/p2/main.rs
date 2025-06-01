@@ -56,8 +56,8 @@ fn decompressed_len(compressed: &str) -> u32 {
 
                 idx += count as usize + 1;
 
-                let count = decompressed_len(compressed[start..start + count as usize].as_str());
-                result += count * repeat;
+                result +=
+                    repeat * decompressed_len(compressed[start..start + count as usize].as_str());
             }
             _ => {
                 result += 1;
