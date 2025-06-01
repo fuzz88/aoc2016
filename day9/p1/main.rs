@@ -35,8 +35,8 @@ fn decompressed_len(compressed: &str) -> u32 {
             }
             ')' => {
                 in_exp = false;
-                exp_end = idx - 1;
-                let mut components = compressed[exp_start..=exp_end].as_str().split("x");
+                exp_end = idx;
+                let mut components = compressed[exp_start..exp_end].as_str().split("x");
                 let (count, repeat) = (
                     components.next().unwrap().parse::<u32>().unwrap(),
                     components.next().unwrap().parse::<u32>().unwrap(),
