@@ -16,7 +16,6 @@ fn read_input(filename: &str) -> String {
 }
 
 fn decompressed_len(compressed: &str) -> u64 {
-    println!("{}", compressed);
     let mut idx: usize = 0;
     let mut result: u64 = 0;
     let mut in_expr: bool = false;
@@ -44,7 +43,6 @@ fn decompressed_len(compressed: &str) -> u64 {
                 result -= (idx - expr_start + 1) as u64;
 
                 let expr = compressed[expr_start..expr_end].as_str();
-                println!("{}", expr);
 
                 let mut components = expr.split("x");
                 let (count, repeat) = (
