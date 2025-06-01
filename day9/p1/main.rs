@@ -41,7 +41,6 @@ fn decompressed_len(compressed: &str) -> u32 {
                     components.next().unwrap().parse::<u32>().unwrap(),
                     components.next().unwrap().parse::<u32>().unwrap(),
                 );
-                println!("{} {}", count, repeat);
                 idx += count as usize;
                 result += count * repeat;
             }
