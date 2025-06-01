@@ -15,10 +15,10 @@ fn read_input(filename: &str) -> String {
     std::fs::read_to_string(filename).expect("expecting valid input data")
 }
 
-fn decompressed_len(compressed: &str) -> u32 {
+fn decompressed_len(compressed: &str) -> u64 {
     println!("{}", compressed);
     let mut idx: usize = 0;
-    let mut result: u32 = 0;
+    let mut result: u64 = 0;
     let mut in_expr: bool = false;
     let mut expr_start: usize = 0;
     let mut expr_end;
@@ -41,15 +41,15 @@ fn decompressed_len(compressed: &str) -> u32 {
             ')' if in_expr => {
                 in_expr = false;
                 expr_end = idx;
-                result -= (idx - expr_start + 1) as u32;
+                result -= (idx - expr_start + 1) as u64;
 
                 let expr = compressed[expr_start..expr_end].as_str();
                 println!("{}", expr);
 
                 let mut components = expr.split("x");
                 let (count, repeat) = (
-                    components.next().unwrap().parse::<u32>().unwrap(),
-                    components.next().unwrap().parse::<u32>().unwrap(),
+                    components.next().unwrap().parse::<u64>().unwrap(),
+                    components.next().unwrap().parse::<u64>().unwrap(),
                 );
 
                 let start = idx + 1;
