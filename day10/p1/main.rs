@@ -3,23 +3,8 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-type Microchip = u32;
-// actually we don't need outputs for now, but let's keep them in case.
-// ahaha :-) got it in part2
-type Outputs = HashMap<u32, Microchip>; // each "output" bin holds one microchip
-
-// Bot is basically described as a two microchips it holds.
-type Bot = [Option<Microchip>; 2];
-type Bots = HashMap<u32, Bot>;
-
-#[derive(Debug)]
-enum Receiver {
-    Bot(u32),
-    Output(u32),
-}
-// Rule is the way to describe who receives lower and higher values.
-type Rule = [Receiver; 2];
-type Rules = HashMap<u32, Rule>;
+mod types;
+use types::*;
 
 // the task is to find bot which holds this two microchips
 const TASK: (Microchip, Microchip) = (61, 17);
@@ -33,7 +18,6 @@ fn main() {
 
     let (mut bots, rules) = read_input(&input_file);
 
-    // println!("{:?}", bots);
     let mut outputs = HashMap::new();
     let mut answer: u32 = 69420; // init with garbage
 
@@ -42,58 +26,50 @@ fn main() {
     println!("{}", answer);
     println!(
         "{}",
-        outputs.get(&0).unwrap() * outputs.get(&1).unwrap() * outputs.get(&2).unwrap()
+        [0, 1, 2]
+            .iter()
+            .map(|idx| outputs.get(&idx).unwrap())
+            .product::<u32>()
     );
 }
 
 fn start_simulation(bots: &mut Bots, rules: &Rules, outputs: &mut Outputs, answer: &mut u32) {
-    let mut stop: bool;
+    let mut do_next: bool;
 
-    loop {
-        let bot_numbers: Vec<&u32> = bots.keys().collect();
-        let bot_numbers: Vec<u32> = bot_numbers.iter().map(|number| **number).collect();
-        // println!("{:?}", bot_numbers);
-        stop = true;
+    'simulation: loop {
+        do_next = false;
+
+        let bot_numbers: Vec<u32> = bots.keys().map(|number| *number).collect();
+
         for bot_number in &bot_numbers {
             let bot = &bots
                 .get(bot_number)
                 .expect("expecting valid iteration")
                 .clone();
-            if bot[0] != None && bot[1] != None {
-                stop = false;
-                let rule = rules.get(bot_number).expect("expecting rule for the bot");
-                // println!("{}: {:?} -> {:?}", bot_number, bot, rule);
-                apply_rule(
-                    &rule[0],
-                    bot,
-                    bot_number,
-                    bots,
-                    Ordering::Less,
-                    answer,
-                    outputs,
-                );
-                apply_rule(
-                    &rule[1],
-                    bot,
-                    bot_number,
-                    bots,
-                    Ordering::Greater,
-                    answer,
-                    outputs,
-                );
-                // if we apply the rule then bot has both hands free.
-                bots.entry(*bot_number).and_modify(|item| *item = [None; 2]);
+
+            match bot {
+                [Some(_), Some(_)] => {
+                    let rule = rules.get(bot_number).expect("expecting rule for the bot");
+                    apply_rule(rule, bot, bot_number, bots, answer, outputs);
+                    bots.entry(*bot_number).and_modify(|item| *item = [None; 2]);
+
+                    // simulation continues until we can't find bot with two microchips.
+                    do_next = true;
+                }
+                [_, _] => {
+                    // bots with less than two microchips are skipped.
+                    continue;
+                }
             }
         }
-        // println!("{:?}", bots);
-        if stop {
-            break;
+        if !do_next {
+            break 'simulation;
         }
     }
 }
 
-fn apply_rule(
-    r: &Receiver,
+fn process_receiver(
+    receiver: &Receiver,
     bot: &Bot,
     bot_number: &u32,
     bots: &mut Bots,
@@ -101,7 +77,7 @@ fn apply_rule(
     answer: &mut u32,
     outputs: &mut Outputs,
 ) {
-    match *r {
+    match *receiver {
         Receiver::Output(number) => {
             outputs.insert(number, take(bot, *bot_number, ordering, answer));
         }
@@ -117,6 +93,24 @@ fn apply_rule(
     }
 }
 
+fn apply_rule(
+    rule: &Rule,
+    bot: &Bot,
+    bot_number: &u32,
+    bots: &mut Bots,
+    answer: &mut u32,
+    outputs: &mut Outputs,
+) {
+    [Ordering::Less, Ordering::Greater]
+        .iter()
+        .enumerate()
+        .for_each(|(idx, ordering)| {
+            process_receiver(
+                &rule[idx], bot, bot_number, bots, *ordering, answer, outputs,
+            );
+        });
+}
+
 fn give(chip: Microchip, bot: &mut Bot) {
     for hand in bot.as_mut_slice() {
         if *hand == None {
@@ -128,24 +122,18 @@ fn give(chip: Microchip, bot: &mut Bot) {
 }
 
 fn take(bot: &Bot, bot_number: u32, ordering: Ordering, answer: &mut u32) -> Microchip {
-    // println!("{:?}", bot);
     if let Some(hand1) = bot[0]
         && let Some(hand2) = bot[1]
     {
         if (hand1, hand2) == TASK || (hand2, hand1) == TASK {
             *answer = bot_number;
         }
-        if hand1.cmp(&hand2) == ordering {
-            {
-                return hand1;
-            }
-        } else {
-            {
-                return hand2;
-            }
-        }
+        return match hand1.cmp(&hand2) == ordering {
+            true => hand1,
+            false => hand2,
+        };
     }
-    unreachable!("cant take from bot with only one microchip. wrong input");
+    unreachable!("cant take from bot with less than two  microchips. wrong input");
 }
 
 fn read_input(filename: &str) -> (Bots, Rules) {
@@ -158,7 +146,7 @@ fn read_input(filename: &str) -> (Bots, Rules) {
         .for_each(|line| {
             if line.starts_with("v") {
                 // "value N goes to ..."
-                let (microchip, bot_number) = parse_bot(line);
+                let (bot_number, microchip) = parse_bot(line);
                 if let Some(bot) = bots.get_mut(&bot_number) {
                     give(microchip, bot);
                 } else {
@@ -177,43 +165,48 @@ fn read_input(filename: &str) -> (Bots, Rules) {
 }
 
 fn parse_bot(line: &str) -> (u32, u32) {
-    //println!("bot: {}", line);
     let mut components = line.split_whitespace();
-    (
-        components
-            .nth(1)
-            .expect("expecting value at original position 1")
-            .parse()
-            .unwrap(),
-        components
-            .nth(3)
-            .expect("expecting bot number at original position 5")
-            .parse()
-            .unwrap(),
-    )
+
+    let microchip = components
+        .nth(1)
+        .expect("expecting microchip at position 1")
+        .parse()
+        .unwrap();
+
+    let bot_number = components
+        .nth(3)
+        .expect("expecting bot number at position 5")
+        .parse()
+        .unwrap();
+
+    (bot_number, microchip)
 }
 
 fn parse_rule(line: &str) -> (u32, Rule) {
-    // println!("rule: {}", line);
     let mut components = line.split_whitespace();
+
     let bot_number = components
         .nth(1)
-        .expect("expecting bot giver at position 1")
+        .expect("expecting bot number at position 1")
         .parse()
-        .expect("expecting nubmer");
+        .unwrap();
+
     let (low_receiver_type, low_receiver_number) = (
         components.nth(3).unwrap(),
         components.nth(0).unwrap().parse().unwrap(),
     );
+
     let (high_receiver_type, high_receiver_number) = (
         components.nth(3).unwrap(),
         components.nth(0).unwrap().parse().unwrap(),
     );
+
     let low_receiver = match low_receiver_type {
         "output" => Receiver::Output(low_receiver_number),
         "bot" => Receiver::Bot(low_receiver_number),
         _ => unreachable!(),
     };
+
     let high_receiver = match high_receiver_type {
         "output" => Receiver::Output(high_receiver_number),
         "bot" => Receiver::Bot(high_receiver_number),
