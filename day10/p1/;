@@ -49,20 +49,17 @@ fn main() {
 fn start_simulation(bots: &mut Bots, rules: &Rules, outputs: &mut Outputs, answer: &mut u32) {
     let mut stop: bool;
 
+    println!("{:?}", bot_numbers);
     loop {
-        let bot_numbers: Vec<&u32> = bots.keys().collect();
-        let bot_numbers: Vec<u32> = bot_numbers.iter().map(|number| **number).collect();
-        // println!("{:?}", bot_numbers);
+    let bot_numbers: Vec<&u32> = bots.keys().collect();
+    let bot_numbers:Vec<u32> = bot_numbers.iter().map(|number| **number).collect();
         stop = true;
         for bot_number in &bot_numbers {
-            let bot = &bots
-                .get(bot_number)
-                .expect("expecting valid iteration")
-                .clone();
+            let bot = &bots.get(bot_number).expect("expecting valid iteration").clone();
             if bot[0] != None && bot[1] != None {
                 stop = false;
                 let rule = rules.get(bot_number).expect("expecting rule for the bot");
-                // println!("{}: {:?} -> {:?}", bot_number, bot, rule);
+                println!("{}: {:?} -> {:?}", bot_number, bot, rule);
                 apply_rule(
                     &rule[0],
                     bot,
@@ -85,7 +82,7 @@ fn start_simulation(bots: &mut Bots, rules: &Rules, outputs: &mut Outputs, answe
                 bots.entry(*bot_number).and_modify(|item| *item = [None; 2]);
             }
         }
-        // println!("{:?}", bots);
+        println!("{:?}", bots);
         if stop {
             break;
         }
