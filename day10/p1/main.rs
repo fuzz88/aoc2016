@@ -9,10 +9,10 @@ fn main() {
 
     let (bots, rules) = read_input(&input_file);
     println!("{}", input_file);
-    println!("{:?} {:?}", bots, rules);
+    println!("{:?}\n{:?}", bots, rules);
 }
 
-type Output = Vec<u32>; // Output is an array of microchips.
+type Output = Vec<u32>; // "output" bin is an array of microchips.
 
 type Bot = [Option<u32>; 2]; // Bot is basically described as a two microchips it holds.
 type Bots = HashMap<u32, Bot>;
@@ -89,11 +89,19 @@ fn read_input(filename: &str) -> (Bots, Rules) {
 }
 
 fn parse_bot(line: &str) -> (u32, u32) {
-    println!("bot: {}", line);
-    let components: Vec<&str> = line.split_whitespace().collect();
+    //println!("bot: {}", line);
+    let mut components = line.split_whitespace();
     (
-        components[1].parse().unwrap(),
-        components[5].parse().unwrap(),
+        components
+            .nth(1)
+            .expect("expecting value at original position 1")
+            .parse()
+            .unwrap(),
+        components
+            .nth(3)
+            .expect("expecting bot number at original position 5")
+            .parse()
+            .unwrap(),
     )
 }
 
