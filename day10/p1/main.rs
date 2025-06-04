@@ -9,6 +9,12 @@ use types::*;
 // the task is to find bot which holds this two microchips
 const TASK: (Microchip, Microchip) = (61, 17);
 
+struct SimState<'a> {
+    bots: &'a mut Bots,
+    outputs: &'a mut Outputs,
+    answer: &'a mut u32,
+}
+
 fn main() {
     println!("--- Day 10: Balance Bots ---");
 
@@ -21,7 +27,13 @@ fn main() {
     let mut outputs = HashMap::new();
     let mut answer: u32 = 69420; // init with garbage
 
-    start_simulation(&mut bots, &rules, &mut outputs, &mut answer);
+    let mut sim_state: SimState = SimState {
+        bots: &mut bots,
+        outputs: &mut outputs,
+        answer: &mut answer,
+    };
+
+    start_simulation(&rules, &mut sim_state);
 
     println!("{}", answer);
     println!(
@@ -33,25 +45,31 @@ fn main() {
     );
 }
 
-fn start_simulation(bots: &mut Bots, rules: &Rules, outputs: &mut Outputs, answer: &mut u32) {
+fn start_simulation(rules: &Rules, sim_state: &mut SimState) {
     let mut do_next: bool;
 
     'simulation: loop {
         do_next = false;
 
-        let bot_numbers: Vec<u32> = bots.keys().map(|number| *number).collect();
+        let bot_numbers: Vec<u32> = sim_state.bots.keys().map(|number| *number).collect();
 
-        for bot_number in &bot_numbers {
-            let bot = &bots
-                .get(bot_number)
+        for bot_number in bot_numbers {
+            let bot = &sim_state
+                .bots
+                .get(&bot_number)
                 .expect("expecting valid iteration")
                 .clone();
 
             match bot {
                 [Some(_), Some(_)] => {
-                    let rule = rules.get(bot_number).expect("expecting rule for the bot");
-                    apply_rule(rule, bot, bot_number, bots, answer, outputs);
-                    bots.entry(*bot_number).and_modify(|item| *item = [None; 2]);
+                    let rule = rules.get(&bot_number).expect("expecting rule for the bot");
+                    apply_rule(rule, bot, bot_number, sim_state);
+
+                    // after we apply the rule, bot's hands must be free.
+                    sim_state
+                        .bots
+                        .entry(bot_number)
+                        .and_modify(|item| *item = [None; 2]);
 
                     // simulation continues until we can't find bot with two microchips.
                     do_next = true;
@@ -71,43 +89,37 @@ fn start_simulation(bots: &mut Bots, rules: &Rules, outputs: &mut Outputs, answe
 fn process_receiver(
     receiver: &Receiver,
     bot: &Bot,
-    bot_number: &u32,
-    bots: &mut Bots,
+    bot_number: u32,
     ordering: Ordering,
-    answer: &mut u32,
-    outputs: &mut Outputs,
+    sim_state: &mut SimState,
 ) {
     match *receiver {
         Receiver::Output(number) => {
-            outputs.insert(number, take(bot, *bot_number, ordering, answer));
+            sim_state
+                .outputs
+                .insert(number, take(bot, bot_number, ordering, sim_state.answer));
         }
         Receiver::Bot(number) => {
-            if let Some(receiver) = bots.get_mut(&number) {
-                give(take(bot, *bot_number, ordering, answer), receiver);
+            if let Some(receiver) = sim_state.bots.get_mut(&number) {
+                give(take(bot, bot_number, ordering, sim_state.answer), receiver);
             } else {
                 let mut new_bot = [None; 2];
-                give(take(bot, *bot_number, ordering, answer), &mut new_bot);
-                bots.insert(number, new_bot);
+                give(
+                    take(bot, bot_number, ordering, sim_state.answer),
+                    &mut new_bot,
+                );
+                sim_state.bots.insert(number, new_bot);
             }
         }
     }
 }
 
-fn apply_rule(
-    rule: &Rule,
-    bot: &Bot,
-    bot_number: &u32,
-    bots: &mut Bots,
-    answer: &mut u32,
-    outputs: &mut Outputs,
-) {
+fn apply_rule(rule: &Rule, bot: &Bot, bot_number: u32, sim_state: &mut SimState) {
     [Ordering::Less, Ordering::Greater]
         .iter()
         .enumerate()
         .for_each(|(idx, ordering)| {
-            process_receiver(
-                &rule[idx], bot, bot_number, bots, *ordering, answer, outputs,
-            );
+            process_receiver(&rule[idx], bot, bot_number, *ordering, sim_state);
         });
 }
 
