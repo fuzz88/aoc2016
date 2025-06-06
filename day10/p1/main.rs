@@ -51,24 +51,24 @@ fn start_simulation(rules: &Rules, sim_state: &mut SimState) {
     'simulation: loop {
         do_next = false;
 
-        let bot_numbers: Vec<u32> = sim_state.bots.keys().map(|number| *number).collect();
+        let bot_ids: Vec<u32> = sim_state.bots.keys().map(|id| *id).collect();
 
-        for bot_number in bot_numbers {
+        for bot_id in bot_ids {
             let bot = &sim_state
                 .bots
-                .get(&bot_number)
+                .get(&bot_id)
                 .expect("expecting valid iteration")
                 .clone();
 
             match bot {
                 [Some(_), Some(_)] => {
-                    let rule = rules.get(&bot_number).expect("expecting rule for the bot");
-                    apply_rule(rule, bot, bot_number, sim_state);
+                    let rule = rules.get(&bot_id).expect("expecting rule for the bot");
+                    apply_rule(rule, bot, bot_id, sim_state);
 
                     // after we apply the rule, bot's hands must be free.
                     sim_state
                         .bots
-                        .entry(bot_number)
+                        .entry(bot_id)
                         .and_modify(|item| *item = [None; 2]);
 
                     // simulation continues until we can't find bot with two microchips.
@@ -89,37 +89,37 @@ fn start_simulation(rules: &Rules, sim_state: &mut SimState) {
 fn process_receiver(
     receiver: &Receiver,
     bot: &Bot,
-    bot_number: u32,
+    bot_id: u32,
     ordering: Ordering,
     sim_state: &mut SimState,
 ) {
     match *receiver {
-        Receiver::Output(number) => {
+        Receiver::Output(id) => {
             sim_state
                 .outputs
-                .insert(number, take(bot, bot_number, ordering, sim_state.answer));
+                .insert(id, take(bot, bot_id, ordering, sim_state.answer));
         }
-        Receiver::Bot(number) => {
-            if let Some(receiver) = sim_state.bots.get_mut(&number) {
-                give(take(bot, bot_number, ordering, sim_state.answer), receiver);
+        Receiver::Bot(id) => {
+            if let Some(receiver) = sim_state.bots.get_mut(&id) {
+                give(take(bot, bot_id, ordering, sim_state.answer), receiver);
             } else {
                 let mut new_bot = [None; 2];
                 give(
-                    take(bot, bot_number, ordering, sim_state.answer),
+                    take(bot, bot_id, ordering, sim_state.answer),
                     &mut new_bot,
                 );
-                sim_state.bots.insert(number, new_bot);
+                sim_state.bots.insert(id, new_bot);
             }
         }
     }
 }
 
-fn apply_rule(rule: &Rule, bot: &Bot, bot_number: u32, sim_state: &mut SimState) {
+fn apply_rule(rule: &Rule, bot: &Bot, bot_id: u32, sim_state: &mut SimState) {
     [Ordering::Less, Ordering::Greater]
         .iter()
         .enumerate()
         .for_each(|(idx, ordering)| {
-            process_receiver(&rule[idx], bot, bot_number, *ordering, sim_state);
+            process_receiver(&rule[idx], bot, bot_id, *ordering, sim_state);
         });
 }
 
@@ -133,12 +133,12 @@ fn give(chip: Microchip, bot: &mut Bot) {
     unreachable!("cant give to bot, it already has two microchips. wrong input");
 }
 
-fn take(bot: &Bot, bot_number: u32, ordering: Ordering, answer: &mut u32) -> Microchip {
+fn take(bot: &Bot, bot_id: u32, ordering: Ordering, answer: &mut u32) -> Microchip {
     if let Some(hand1) = bot[0]
         && let Some(hand2) = bot[1]
     {
         if (hand1, hand2) == TASK || (hand2, hand1) == TASK {
-            *answer = bot_number;
+            *answer = bot_id;
         }
         return match hand1.cmp(&hand2) == ordering {
             true => hand1,
@@ -158,18 +158,18 @@ fn read_input(filename: &str) -> (Bots, Rules) {
         .for_each(|line| {
             if line.starts_with("v") {
                 // "value N goes to ..."
-                let (bot_number, microchip) = parse_bot(line);
-                if let Some(bot) = bots.get_mut(&bot_number) {
+                let (bot_id, microchip) = parse_bot(line);
+                if let Some(bot) = bots.get_mut(&bot_id) {
                     give(microchip, bot);
                 } else {
                     let mut new_bot = [None; 2];
                     give(microchip, &mut new_bot);
-                    bots.insert(bot_number, new_bot);
+                    bots.insert(bot_id, new_bot);
                 }
             } else {
                 // "bot N gives ..."
-                let (bot_number, rule) = parse_rule(line);
-                rules.insert(bot_number, rule);
+                let (bot_id, rule) = parse_rule(line);
+                rules.insert(bot_id, rule);
             }
         });
 
@@ -185,45 +185,45 @@ fn parse_bot(line: &str) -> (u32, u32) {
         .parse()
         .unwrap();
 
-    let bot_number = components
+    let bot_id = components
         .nth(3)
-        .expect("expecting bot number at position 5")
+        .expect("expecting bot id at position 5")
         .parse()
         .unwrap();
 
-    (bot_number, microchip)
+    (bot_id, microchip)
 }
 
 fn parse_rule(line: &str) -> (u32, Rule) {
     let mut components = line.split_whitespace();
 
-    let bot_number = components
+    let bot_id = components
         .nth(1)
-        .expect("expecting bot number at position 1")
+        .expect("expecting bot id at position 1")
         .parse()
         .unwrap();
 
-    let (low_receiver_type, low_receiver_number) = (
+    let (low_receiver_type, low_receiver_id) = (
         components.nth(3).unwrap(),
         components.nth(0).unwrap().parse().unwrap(),
     );
 
-    let (high_receiver_type, high_receiver_number) = (
+    let (high_receiver_type, high_receiver_id) = (
         components.nth(3).unwrap(),
         components.nth(0).unwrap().parse().unwrap(),
     );
 
     let low_receiver = match low_receiver_type {
-        "output" => Receiver::Output(low_receiver_number),
-        "bot" => Receiver::Bot(low_receiver_number),
+        "output" => Receiver::Output(low_receiver_id),
+        "bot" => Receiver::Bot(low_receiver_id),
         _ => unreachable!(),
     };
 
     let high_receiver = match high_receiver_type {
-        "output" => Receiver::Output(high_receiver_number),
-        "bot" => Receiver::Bot(high_receiver_number),
+        "output" => Receiver::Output(high_receiver_id),
+        "bot" => Receiver::Bot(high_receiver_id),
         _ => unreachable!(),
     };
 
-    (bot_number, [low_receiver, high_receiver])
+    (bot_id, [low_receiver, high_receiver])
 }
