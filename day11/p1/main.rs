@@ -76,7 +76,9 @@ fn floor_items(items: Vec<Item>, floor: u32) -> Vec<Item> {
 }
 
 fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
-    // type names will be internalized in this vector.
+    // names of elements will be internalized in this vector.
+    // then it will be dropped, because we don't actially need this names.
+    // unique indexes as ids is just enough.
     let mut elements: Vec<String> = vec![];
 
     let items = fs::read_to_string(filename)?
