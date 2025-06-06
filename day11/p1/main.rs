@@ -35,10 +35,11 @@ fn solver(items: &Vec<Item>) -> u32 {
     let mut solutions_step_count: Vec<u32> = vec![];
 
     solutions_step_count.push(99);
+    //
     // some way of searching.
     // some combinatorics.
     //
-    // how much operations needed to move all items, if there is no limitations?
+    // how many operations are needed to move all items, if there are no limitations?
     //
     // limitations:
     //
@@ -46,11 +47,16 @@ fn solver(items: &Vec<Item>) -> u32 {
     //      2. elevator must not be empty, and this adds operations.
     //
     //
-    // there is some kind of formula:
+    // intuition tells me that there is kind of formula:
     //
     // min_ops = ops_without_limitations + ops_to_keep_invariants
     //
     // and ops_to_keep_invariants depends of relative positions of blockers and elevator mechanics.
+    //
+    // but what if we want actual sequence of operations?
+    // how to implement full enumeration of operational sequences which are leading to desired
+    // results? how to implement branch pruning and backtracking of variants?
+    //
 
     *solutions_step_count
         .iter()
