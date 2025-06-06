@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
-
-type Result<T> = std::result::Result<T, String>;
+use std::io;
 
 #[derive(Debug, Clone)]
 enum Item {
@@ -9,27 +8,25 @@ enum Item {
     Generator { element: String, floor: u32 },
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), io::Error> {
     println!("--- Day 11: Radioisotope Thermoelectric Generators ---");
 
-    let input_file = env::args()
-        .nth(1)
-        .ok_or("no input filename as cli argument")?;
+    let input_file = env::args().nth(1).ok_or(io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "no input filename as cli argument",
+    ))?;
 
-    let input_data = read_input(&input_file);
+    let input_data = read_input(&input_file)?;
 
     println!("{:#?}", input_data);
 
     Ok(())
 }
 
-fn read_input(filename: &str) -> Result<Vec<Item>> {
-    let items = fs::read_to_string(filename)
-        .map_err(|err| format!("`{filename}`: {err}"))?
+fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
+    let items = fs::read_to_string(filename)?
         .lines()
         .map(|line| parse_line(line))
-        .collect::<Vec<Vec<Item>>>()
-        .into_iter()
         .flatten()
         .collect();
 
@@ -42,6 +39,7 @@ fn parse_line(line: &str) -> Vec<Item> {
 
     // always starting from the first floor
     let mut floor: u32 = 1;
+    // parse floor information by iterating pairs of tokens.
     components.windows(2).for_each(|pair| match pair {
         ["The", "second"] => floor = 2,
         ["The", "third"] => floor = 3,
@@ -51,7 +49,11 @@ fn parse_line(line: &str) -> Vec<Item> {
             floor,
         }),
         [element, "microchip," | "microchip." | "microchip"] => items.push(Item::Microchip {
-            element: element.split("-").nth(0).unwrap().to_string(),
+            element: element
+                .split("-")
+                .nth(0)
+                .expect("expecting dash in the type name of microchip")
+                .to_string(),
             floor,
         }),
         _ => {}
