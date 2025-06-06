@@ -11,7 +11,7 @@ enum ItemType {
 #[derive(Debug)]
 struct Item {
     item_type: ItemType,
-    element: String,
+    element_id: usize,
     floor: u32,
 }
 
@@ -70,16 +70,27 @@ fn floor_items(items: Vec<Item>, floor: u32) -> Vec<Item> {
 }
 
 fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
+    // type names will be internalized in this vector.
+    let mut elements: Vec<String> = vec![];
+
     let items = fs::read_to_string(filename)?
         .lines()
-        .map(|line| parse_line(line))
+        .map(|line| parse_line(line, &mut elements))
         .flatten()
         .collect();
 
     Ok(items)
 }
 
-fn parse_line(line: &str) -> Vec<Item> {
+fn element_id(name: &str, elements: &mut Vec<String>) -> usize {
+    if let Some(idx) = elements.iter().position(|el| el == name) {
+        return idx;
+    }
+    elements.push(name.to_string());
+    elements.len() - 1
+}
+
+fn parse_line(line: &str, elements: &mut Vec<String>) -> Vec<Item> {
     let mut items: Vec<Item> = vec![];
     let components: Vec<&str> = line.split_whitespace().collect();
 
@@ -90,18 +101,20 @@ fn parse_line(line: &str) -> Vec<Item> {
         ["The", "second"] => floor = 2,
         ["The", "third"] => floor = 3,
         ["The", "fourth"] => floor = 4,
-        [element, "generator," | "generator." | "generator"] => items.push(Item {
+        [element_name, "generator," | "generator." | "generator"] => items.push(Item {
             item_type: ItemType::Generator,
-            element: element.to_string(),
+            element_id: element_id(element_name, elements),
             floor,
         }),
-        [element, "microchip," | "microchip." | "microchip"] => items.push(Item {
+        [element_name, "microchip," | "microchip." | "microchip"] => items.push(Item {
             item_type: ItemType::Microchip,
-            element: element
-                .split("-")
-                .nth(0)
-                .expect("expecting dash in the type name of microchip")
-                .to_string(),
+            element_id: element_id(
+                element_name
+                    .split("-")
+                    .nth(0)
+                    .expect("expecting dash in the type name of microchip"),
+                elements,
+            ),
             floor,
         }),
         _ => {}
