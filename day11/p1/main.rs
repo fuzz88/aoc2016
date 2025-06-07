@@ -102,13 +102,16 @@ fn parse_line(line: &str, elements: &mut Vec<String>) -> Vec<Item> {
     let mut items: Vec<Item> = vec![];
     let components: Vec<&str> = line.split_whitespace().collect();
 
-    // always starting from the first floor.
-    let mut floor: u32 = 1;
+    let mut floor: u32;
+    match components[1] {
+        "first" => floor = 1,
+        "second" => floor = 2,
+        "third" => floor = 3,
+        "fourth" => floor = 4,
+        _ => unreachable!(),
+    }
     // parse floor information by iterating pairs of tokens.
-    components.windows(2).for_each(|pair| match pair {
-        ["The", "second"] => floor = 2,
-        ["The", "third"] => floor = 3,
-        ["The", "fourth"] => floor = 4,
+    components[2..].windows(2).for_each(|pair| match pair {
         [element_name, "generator," | "generator." | "generator"] => items.push(Item {
             item_type: ItemType::Generator,
             element_id: element_id(element_name, elements),
