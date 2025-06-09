@@ -1,6 +1,14 @@
 use std::env;
+use std::fmt;
 use std::fs;
 use std::io;
+use std::sync::{OnceLock, RwLock};
+
+static ELEMENTS: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
+
+fn get_elements() -> &'static RwLock<Vec<String>> {
+    ELEMENTS.get_or_init(|| RwLock::new(vec![]))
+}
 
 #[derive(Debug)]
 enum ItemType {
@@ -8,11 +16,35 @@ enum ItemType {
     Generator,
 }
 
-#[derive(Debug)]
 struct Item {
     item_type: ItemType,
     element_id: usize,
     floor: u32,
+}
+
+impl fmt::Display for Item {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let elements = get_elements().read().unwrap();
+        let name = &elements[self.element_id];
+        write!(
+            f,
+            "Item {{ item_type: {:?}, element: {}, floor: {} }}",
+            self.item_type, name, self.floor
+        )
+    }
+}
+
+impl fmt::Debug for Item {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let elements = get_elements().read().unwrap();
+        let name = &elements[self.element_id];
+
+        f.debug_struct("Item")
+            .field("item_type", &self.item_type)
+            .field("element", name)
+            .field("floor", &self.floor)
+            .finish()
+    }
 }
 
 fn main() -> Result<(), io::Error> {
@@ -76,21 +108,17 @@ fn floor_items(items: Vec<Item>, floor: u32) -> Vec<Item> {
 }
 
 fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
-    // names of elements will be internalized in this vector.
-    // then it will be dropped, because we don't actially need this names.
-    // unique indexes as ids is just enough.
-    let mut elements: Vec<String> = vec![];
-
     let items = fs::read_to_string(filename)?
         .lines()
-        .map(|line| parse_line(line, &mut elements))
+        .map(|line| parse_line(line))
         .flatten()
         .collect();
 
     Ok(items)
 }
 
-fn element_id(name: &str, elements: &mut Vec<String>) -> usize {
+fn element_id(name: &str) -> usize {
+    let mut elements = get_elements().write().unwrap();
     if let Some(idx) = elements.iter().position(|el| el == name) {
         return idx;
     }
@@ -98,7 +126,7 @@ fn element_id(name: &str, elements: &mut Vec<String>) -> usize {
     elements.len() - 1
 }
 
-fn parse_line(line: &str, elements: &mut Vec<String>) -> Vec<Item> {
+fn parse_line(line: &str) -> Vec<Item> {
     let mut items: Vec<Item> = vec![];
     let components: Vec<&str> = line.split_whitespace().collect();
 
@@ -114,7 +142,7 @@ fn parse_line(line: &str, elements: &mut Vec<String>) -> Vec<Item> {
     components[2..].windows(2).for_each(|pair| match pair {
         [element_name, "generator," | "generator." | "generator"] => items.push(Item {
             item_type: ItemType::Generator,
-            element_id: element_id(element_name, elements),
+            element_id: element_id(element_name),
             floor,
         }),
         [element_name, "microchip," | "microchip." | "microchip"] => items.push(Item {
@@ -124,7 +152,6 @@ fn parse_line(line: &str, elements: &mut Vec<String>) -> Vec<Item> {
                     .split("-")
                     .nth(0)
                     .expect("expecting dash in the type name of microchip"),
-                elements,
             ),
             floor,
         }),
