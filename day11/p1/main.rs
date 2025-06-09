@@ -22,18 +22,6 @@ struct Item {
     floor: u32,
 }
 
-impl fmt::Display for Item {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let elements = get_elements().read().unwrap();
-        let name = &elements[self.element_id];
-        write!(
-            f,
-            "Item {{ item_type: {:?}, element: {}, floor: {} }}",
-            self.item_type, name, self.floor
-        )
-    }
-}
-
 impl fmt::Debug for Item {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let elements = get_elements().read().unwrap();
@@ -41,7 +29,8 @@ impl fmt::Debug for Item {
 
         f.debug_struct("Item")
             .field("item_type", &self.item_type)
-            .field("element", name)
+            .field("element_id", &self.element_id)
+            .field("(debug) elements_name", name)
             .field("floor", &self.floor)
             .finish()
     }
