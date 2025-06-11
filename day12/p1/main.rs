@@ -8,7 +8,7 @@ enum Op {
     B,
     C,
     D,
-    N(u32),
+    N(i32),
 }
 
 #[derive(Debug)]
@@ -87,6 +87,113 @@ impl Iterator for Parser {
     }
 }
 
+struct Machine {
+    registers: [i32; 4],
+    pc: usize,
+}
+
+impl Machine {
+    fn new() -> Self {
+        Machine {
+            registers: [0; 4],
+            pc: 0,
+        }
+    }
+
+    fn run(&mut self, program: &Vec<Instruction>) {
+        loop {
+            if self.pc >= program.len() {
+                break;
+            } else {
+                match &program[self.pc] {
+                    Instruction::INC(op) => match op {
+                        Op::A => self.registers[0] += 1,
+                        Op::B => self.registers[1] += 1,
+                        Op::C => self.registers[2] += 1,
+                        Op::D => self.registers[3] += 1,
+                        Op::N(_) => {}
+                    },
+                    Instruction::DEC(op) => match op {
+                        Op::A => self.registers[0] -= 1,
+                        Op::B => self.registers[1] -= 1,
+                        Op::C => self.registers[2] -= 1,
+                        Op::D => self.registers[3] -= 1,
+                        Op::N(_) => {}
+                    },
+                    Instruction::CPY { value, dst } => match dst {
+                        Op::A => {
+                            self.registers[0] = match value {
+                                Op::B => self.registers[1],
+                                Op::C => self.registers[2],
+                                Op::D => self.registers[3],
+                                Op::N(v) => *v,
+                                _ => unreachable!("cant copy register to itself"),
+                            }
+                        }
+                        Op::B => {
+                            self.registers[1] = match value {
+                                Op::A => self.registers[0],
+                                Op::C => self.registers[2],
+                                Op::D => self.registers[3],
+                                Op::N(v) => *v,
+                                _ => unreachable!("cant copy register to itself"),
+                            }
+                        }
+                        Op::C => {
+                            self.registers[2] = match value {
+                                Op::B => self.registers[1],
+                                Op::A => self.registers[0],
+                                Op::D => self.registers[3],
+                                Op::N(v) => *v,
+                                _ => unreachable!("cant copy register to itself"),
+                            }
+                        }
+                        Op::D => {
+                            self.registers[3] = match value {
+                                Op::B => self.registers[1],
+                                Op::C => self.registers[2],
+                                Op::A => self.registers[0],
+                                Op::N(v) => *v,
+                                _ => unreachable!("cant copy register to itself"),
+                            }
+                        }
+                        _ => unreachable!("dst must be a register"),
+                    },
+                    Instruction::JNZ { cond, count } => match cond {
+                        Op::A => {
+                            if self.registers[0] != 0 {
+                                self.pc = (self.pc as i32 + count - 1) as usize;
+                            }
+                        }
+                        Op::B => {
+                            if self.registers[1] != 0 {
+                                self.pc = (self.pc as i32 + count - 1) as usize;
+                            }
+                        }
+                        Op::C => {
+                            if self.registers[2] != 0 {
+                                self.pc = (self.pc as i32 + count - 1) as usize;
+                            }
+                        }
+                        Op::D => {
+                            if self.registers[3] != 0 {
+                                self.pc = (self.pc as i32 + count - 1) as usize;
+                            }
+                        }
+                        Op::N(v) => {
+                            if *v != 0 {
+                                self.pc = (self.pc as i32 + count - 1) as usize;
+                            }
+                        }
+                    },
+                }
+            }
+            // println!("{} {:?}", self.pc, self.registers);
+            self.pc += 1;
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     println!("--- Day 12: Leonardo's Monorail ---");
 
@@ -94,11 +201,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .nth(1)
         .expect("expecting input file name as cli argument");
 
-    let parser = Parser::new(&input_file)?;
+    let program: Vec<Instruction> = Parser::new(&input_file)?.collect();
 
-    let program: Vec<Instruction> = parser.collect();
+    let mut machine = Machine::new();
+    machine.run(&program);
+    println!("{}", machine.registers[0]);
 
-    println!("{:#?}", program);
+    let mut machine = Machine::new();
+    machine.registers[2] = 1;
+    machine.run(&program);
+    println!("{}", machine.registers[0]);
 
     Ok(())
 }
