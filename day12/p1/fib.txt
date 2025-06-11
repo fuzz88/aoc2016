@@ -1,0 +1,11 @@
+cpy 12 d
+cpy 0 a
+cpy 1 b
+cpy b c
+dec b
+inc a
+jnz b -2
+cpy a b
+cpy c a
+dec d
+jnz d -7

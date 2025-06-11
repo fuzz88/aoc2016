@@ -1,0 +1,5 @@
+cpy 0 a
+cpy 100 b
+dec b
+inc a
+jnz b -2
