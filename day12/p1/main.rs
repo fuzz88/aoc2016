@@ -30,7 +30,7 @@ impl Parser {
             .lines()
             .map(|line| line.split_whitespace())
             .flatten()
-            .map(|instruction| instruction.to_string())
+            .map(|token| token.to_string())
             .collect();
 
         Ok(Parser {
