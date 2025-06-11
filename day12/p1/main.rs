@@ -3,12 +3,28 @@ use std::error::Error;
 use std::fs;
 
 #[derive(Debug)]
-enum Op {
+enum Reg {
     A,
     B,
     C,
     D,
-    N(i32),
+}
+
+impl Reg {
+    fn idx(&self) -> usize {
+        match self {
+            Reg::A => 0,
+            Reg::B => 1,
+            Reg::C => 2,
+            Reg::D => 3,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Op {
+    Register(Reg),
+    Number(i32),
 }
 
 #[derive(Debug)]
@@ -25,7 +41,7 @@ struct Parser {
 }
 
 impl Parser {
-    fn new(filename: &str) -> Result<Self, Box<dyn Error>> {
+    fn tokenize(filename: &str) -> Result<Self, Box<dyn Error>> {
         let input_data = fs::read_to_string(filename)?
             .lines()
             .map(|line| line.split_whitespace())
@@ -38,15 +54,14 @@ impl Parser {
             curr: 0,
         })
     }
-}
-
-fn parse_operand(name: &str) -> Op {
-    match name {
-        "a" => Op::A,
-        "b" => Op::B,
-        "c" => Op::C,
-        "d" => Op::D,
-        num => Op::N(num.parse().unwrap()),
+    fn parse_operand(name: &str) -> Op {
+        match name {
+            "a" => Op::Register(Reg::A),
+            "b" => Op::Register(Reg::B),
+            "c" => Op::Register(Reg::C),
+            "d" => Op::Register(Reg::D),
+            num => Op::Number(num.parse().unwrap()),
+        }
     }
 }
 
@@ -60,22 +75,26 @@ impl Iterator for Parser {
                 "cpy" => {
                     self.curr += 2;
                     Instruction::CPY {
-                        value: parse_operand(self.input_data[self.curr - 2].as_ref()),
-                        dst: parse_operand(self.input_data[self.curr - 1].as_ref()),
+                        value: Parser::parse_operand(self.input_data[self.curr - 2].as_ref()),
+                        dst: Parser::parse_operand(self.input_data[self.curr - 1].as_ref()),
                     }
                 }
                 "inc" => {
                     self.curr += 1;
-                    Instruction::INC(parse_operand(self.input_data[self.curr - 1].as_ref()))
+                    Instruction::INC(Parser::parse_operand(
+                        self.input_data[self.curr - 1].as_ref(),
+                    ))
                 }
                 "dec" => {
                     self.curr += 1;
-                    Instruction::DEC(parse_operand(self.input_data[self.curr - 1].as_ref()))
+                    Instruction::DEC(Parser::parse_operand(
+                        self.input_data[self.curr - 1].as_ref(),
+                    ))
                 }
                 "jnz" => {
                     self.curr += 2;
                     Instruction::JNZ {
-                        cond: parse_operand(self.input_data[self.curr - 2].as_ref()),
+                        cond: Parser::parse_operand(self.input_data[self.curr - 2].as_ref()),
                         count: self.input_data[self.curr - 1].parse().unwrap(),
                     }
                 }
@@ -107,89 +126,38 @@ impl Machine {
             } else {
                 match &program[self.pc] {
                     Instruction::INC(op) => match op {
-                        Op::A => self.registers[0] += 1,
-                        Op::B => self.registers[1] += 1,
-                        Op::C => self.registers[2] += 1,
-                        Op::D => self.registers[3] += 1,
-                        Op::N(_) => {}
+                        Op::Number(_) => {}
+                        Op::Register(reg) => self.registers[reg.idx()] += 1,
                     },
                     Instruction::DEC(op) => match op {
-                        Op::A => self.registers[0] -= 1,
-                        Op::B => self.registers[1] -= 1,
-                        Op::C => self.registers[2] -= 1,
-                        Op::D => self.registers[3] -= 1,
-                        Op::N(_) => {}
+                        Op::Number(_) => {}
+                        Op::Register(reg) => self.registers[reg.idx()] -= 1,
                     },
                     Instruction::CPY { value, dst } => match dst {
-                        Op::A => {
-                            self.registers[0] = match value {
-                                Op::B => self.registers[1],
-                                Op::C => self.registers[2],
-                                Op::D => self.registers[3],
-                                Op::N(v) => *v,
-                                _ => unreachable!("cant copy register to itself"),
+                        Op::Number(_) => {}
+                        Op::Register(reg) => {
+                            self.registers[reg.idx()] = match value {
+                                Op::Register(reg) => self.registers[reg.idx()],
+                                Op::Number(value) => *value,
                             }
                         }
-                        Op::B => {
-                            self.registers[1] = match value {
-                                Op::A => self.registers[0],
-                                Op::C => self.registers[2],
-                                Op::D => self.registers[3],
-                                Op::N(v) => *v,
-                                _ => unreachable!("cant copy register to itself"),
-                            }
-                        }
-                        Op::C => {
-                            self.registers[2] = match value {
-                                Op::B => self.registers[1],
-                                Op::A => self.registers[0],
-                                Op::D => self.registers[3],
-                                Op::N(v) => *v,
-                                _ => unreachable!("cant copy register to itself"),
-                            }
-                        }
-                        Op::D => {
-                            self.registers[3] = match value {
-                                Op::B => self.registers[1],
-                                Op::C => self.registers[2],
-                                Op::A => self.registers[0],
-                                Op::N(v) => *v,
-                                _ => unreachable!("cant copy register to itself"),
-                            }
-                        }
-                        _ => unreachable!("dst must be a register"),
                     },
                     Instruction::JNZ { cond, count } => match cond {
-                        Op::A => {
-                            if self.registers[0] != 0 {
+                        Op::Register(reg) => {
+                            if self.registers[reg.idx()] != 0 {
                                 self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
+                            };
                         }
-                        Op::B => {
-                            if self.registers[1] != 0 {
+                        Op::Number(value) => {
+                            if *value != 0 {
                                 self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
-                        }
-                        Op::C => {
-                            if self.registers[2] != 0 {
-                                self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
-                        }
-                        Op::D => {
-                            if self.registers[3] != 0 {
-                                self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
-                        }
-                        Op::N(v) => {
-                            if *v != 0 {
-                                self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
+                            };
                         }
                     },
                 }
+                // println!("{} {:?}", self.pc, self.registers);
+                self.pc += 1;
             }
-            // println!("{} {:?}", self.pc, self.registers);
-            self.pc += 1;
         }
     }
 }
@@ -201,16 +169,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .nth(1)
         .expect("expecting input file name as cli argument");
 
-    let program: Vec<Instruction> = Parser::new(&input_file)?.collect();
+    let program = Parser::tokenize(&input_file)?.collect::<Vec<Instruction>>();
 
     let mut machine = Machine::new();
     machine.run(&program);
-    println!("{}", machine.registers[0]);
+    println!("{}", machine.registers[Reg::A.idx()]);
 
     let mut machine = Machine::new();
     machine.registers[2] = 1;
     machine.run(&program);
-    println!("{}", machine.registers[0]);
+    println!("{}", machine.registers[Reg::A.idx()]);
 
     Ok(())
 }
