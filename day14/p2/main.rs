@@ -1,13 +1,12 @@
-#![feature(iter_map_windows)]
-mod md5;
-use md5::{Digest, compute};
-
 use std::collections::HashSet;
+use md5::{compute, Digest};
+mod md5;
 
 fn main() {
     println!("--- Day 14: One-Time Pad ---");
 
     let salt = "yjdafjpo";
+
     let mut count = 0;
     let mut idx = 0;
 
@@ -61,8 +60,10 @@ fn stretched_compute(data: &str) -> Digest {
     let mut hash = compute(data);
     let mut count = 2016;
     loop {
-        if count == 0 { break; } 
-        hash = compute(format!{"{:?}", hash});
+        if count == 0 {
+            break;
+        }
+        hash = compute(format! {"{:?}", hash});
         count -= 1;
     }
     hash
