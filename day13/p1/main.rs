@@ -1,21 +1,20 @@
 use std::cmp::min;
 use std::collections::{HashSet, VecDeque};
 
-#[rustfmt::skip]
 fn make_is_wall(dfn: i32) -> impl Fn(i32, i32) -> bool {
     move |x: i32, y: i32| {
+        #[rustfmt::skip]
         let n = x*x + 3*x + 2*x*y + y + y*y;
         (n + dfn).count_ones() % 2 != 0
     }
 }
 
-#[rustfmt::skip]
 fn search_path_and_count_dist(
-    x: i32,                                 // start coordinates
+    x: i32,
     y: i32,
-    xd: i32,                                // destination coordinates
+    xd: i32,
     yd: i32,
-    max_dist: u32,                          // how far can we reach
+    max_dist: u32,
     is_wall: impl Fn(i32, i32) -> bool,
 ) -> (u32, u32) {
     // bfs
@@ -43,15 +42,18 @@ fn search_path_and_count_dist(
             count += 1;
         }
 
-        let dxs = (-1..=1).flat_map(|i| (-1..=1).map(move |j| (i, j)));
+        let diffs = (-1..=1).flat_map(|i| (-1..=1).map(move |j| (i, j)));
 
-        dxs.filter(|(dx, dy)| *dx == 0 || *dy == 0)     // no diagonal movement
-            .map(|(dx, dy)| (x + dx, y + dy))           // neighbours
-            .filter(|(nx, ny)| {                        // filter out negatives and walls
+        diffs
+            .filter(|(dx, dy)| *dx == 0 || *dy == 0) // filter out diagonal diffs
+            .map(|(dx, dy)| (x + dx, y + dy)) // apply diffs to get neighbours
+            .filter(|(nx, ny)| {
+                // filter out negatives and walls from neighbours
                 *nx >= 0 && *ny >= 0 && !is_wall(*nx, *ny)
             })
             .for_each(|(nx, ny)| {
-                if !visited.contains(&(nx, ny)) {       // filter out already visited
+                if !visited.contains(&(nx, ny)) {
+                    // filter out already visited
                     visited.insert((nx, ny));
                     for_processing.push_back((nx, ny, dist + 1));
                 }
