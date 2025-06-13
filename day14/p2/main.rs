@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use md5::{compute, Digest};
+use std::collections::HashSet;
 mod md5;
 
 fn main() {
@@ -19,15 +19,18 @@ fn main() {
         let to_hash = [salt, &idx.to_string()].concat();
         let hash = stretched_compute(&to_hash);
 
-        if let Some(ch) = check_5(&hash) {
-            for check in &checking {
-                if idx - check.1 < 1000 {
-                    if ch == check.0 {
-                        producers.push(check.1);
+        if let Some(ch_from_5) = find_5(&hash) {
+            for (ch_from_producer, idx_producer) in &checking {
+                if idx - idx_producer < 1000 {
+                    if ch_from_5 == *ch_from_producer {
+                        producers.push(*idx_producer);
                         count += 1;
+                        // just found
+                        idxs_to_remove.insert(*idx_producer);
                     }
                 } else {
-                    idxs_to_remove.insert(check.1);
+                    // expired
+                    idxs_to_remove.insert(*idx_producer);
                 }
             }
         }
@@ -39,11 +42,8 @@ fn main() {
             .collect();
         idxs_to_remove.clear();
 
-        match find_3(&hash) {
-            None => {}
-            Some(ch) => {
-                checking.push((ch, idx));
-            }
+        if let Some(ch) = find_3(&hash) {
+            checking.push((ch, idx));
         }
 
         if count > 64 {
@@ -81,7 +81,7 @@ fn find_3(hash: &[u8; 16]) -> Option<u8> {
     None
 }
 
-fn check_5(hash: &[u8; 16]) -> Option<u8> {
+fn find_5(hash: &[u8; 16]) -> Option<u8> {
     for i in 0..hash.len() - 2 {
         if hash[i + 1] >> 4 == hash[i + 1] & 0x0F
             && ((hash[i + 1] == hash[i + 2] && hash[i + 1] >> 4 == hash[i] & 0x0F)
