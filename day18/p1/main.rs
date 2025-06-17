@@ -40,21 +40,21 @@ fn get_next_row(row: &mut Vec<Tile>) -> Vec<Tile> {
 }
 
 fn get_total_safe_count(n: usize, init_tile: &Vec<Tile>) -> usize {
-    let mut count = 1;
+    let mut tile_count = 1;
     let mut safe_count = get_safe_count(init_tile);
     let mut current_tile = init_tile.clone();
-    loop {
-        count += 1;
 
+    loop {
         let next_tile = get_next_row(&mut current_tile);
         safe_count += get_safe_count(&next_tile);
+        tile_count += 1;
 
-        current_tile = next_tile;
-
-        if count == n {
+        if tile_count == n {
             break;
         }
+        current_tile = next_tile;
     }
+
     safe_count
 }
 
