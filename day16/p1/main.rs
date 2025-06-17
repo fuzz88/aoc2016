@@ -24,7 +24,6 @@ fn calculate_checksum(disk_length: usize, mut initial_state: String) -> String {
     let mut result = String::new();
 
     loop {
-        result.clear();
         let a = initial_state;
 
         result.push_str(&a);
@@ -42,6 +41,7 @@ fn calculate_checksum(disk_length: usize, mut initial_state: String) -> String {
             break;
         } else {
             initial_state = result.clone();
+            result.clear();
         };
     }
 
