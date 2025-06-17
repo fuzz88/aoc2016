@@ -1,9 +1,13 @@
 use std::env;
 use std::fs;
-use std::process;
 
 mod md5;
 use md5::compute;
+
+static mut shortest_len: usize = 1000000;
+static mut shortest: String = String::new();
+static mut longest_len: usize = 0;
+static mut longest: String = String::new();
 
 fn main() {
     println!("--- Day 17: Two Steps Forward ---");
@@ -12,7 +16,23 @@ fn main() {
         .expect("expecting valid input filename");
     let passcodes: Vec<&str> = content.lines().collect();
 
-    println!("{passcodes:#?}");
+    // println!("{passcodes:#?}");
+    for passcode in passcodes {
+        solve(passcode, (0, 0));
+        // println!("  {}:", passcode);
+        unsafe {
+            if shortest_len != 1000000 {
+                println!("{}", &shortest[passcode.len()..]);
+                shortest_len = 1000000;
+            }
+            if longest_len != 0 {
+                // println!("{}", &longest[passcode.len()..]);
+                longest_len -= passcode.len();
+                println!("{longest_len}");
+                longest_len = 0;
+            }
+        }
+    }
 }
 
 fn solve(passcode: &str, position: (i8, i8)) {
@@ -23,8 +43,17 @@ fn solve(passcode: &str, position: (i8, i8)) {
     }
 
     if position == (3, 3) {
-        println!("{passcode}");
-        process::exit(1);
+        unsafe {
+            if passcode.len() < shortest_len {
+                shortest_len = passcode.len();
+                shortest = passcode.to_string();
+            }
+            if passcode.len() > longest_len {
+                longest_len = passcode.len();
+                longest = passcode.to_string();
+            }
+        }
+        return;
     }
 
     let hash = compute(passcode);
