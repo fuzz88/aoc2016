@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::env;
 use std::error;
 use std::fs;
@@ -25,6 +26,30 @@ fn parse_line(line: &str) -> IPRange {
 
     IPRange { low, high }
 }
+/// lhs is what allowed, rhs is what NOT allowed.
+fn sub_ranges(lhs: &IPRange, rhs: &IPRange) -> Vec<IPRange> {
+    let mut result = Vec::new();
+    match (
+        lhs.low.cmp(&rhs.low),
+        lhs.high.cmp(&rhs.low),
+        lhs.low.cmp(&rhs.high),
+        lhs.high.cmp(&rhs.high),
+    ) {
+        (Ordering::Less, _, _, Ordering::Greater) => {
+            result.push(IPRange {
+                low: lhs.low,
+                high: rhs.low - 1,
+            });
+            result.push(IPRange {
+                low: rhs.high + 1,
+                high: lhs.high,
+            });
+        }
+        _ => todo!(),
+    }
+
+    result
+}
 
 fn main() -> Result<(), Box<dyn error::Error>> {
     println!("--- Day 20: Firewall Rules ---");
@@ -36,6 +61,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let input_data = read_input(&input_file)?;
 
     println!("{input_data:#?}");
+
+    println!("{:#?}", sub_ranges(&input_data[0], &input_data[1]));
 
     Ok(())
 }
