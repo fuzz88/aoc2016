@@ -34,8 +34,8 @@ fn parse_line(line: &str) -> IPRange {
 }
 /// lhs is what allowed, rhs is what NOT allowed.
 fn sub_ranges(lhs: &IPRange, rhs: &IPRange) -> Vec<IPRange> {
-    println!("lhs: {:#?}", lhs);
-    println!("rhs: {:#?}", rhs);
+    // println!("lhs: {:#?}", lhs);
+    // println!("rhs: {:#?}", rhs);
     let mut result = Vec::new();
     match (
         lhs.low.cmp(&rhs.low),
