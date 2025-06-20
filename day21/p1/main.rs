@@ -13,6 +13,47 @@ enum Op {
     Move { x: usize, y: usize },
 }
 
+impl From<&str> for Op {
+    fn from(line: &str) -> Self {
+        let components: Vec<&str> = line.split_whitespace().collect();
+
+        match components[0] {
+            "swap" => match components[1] {
+                "position" => Op::SwapPos {
+                    x: components[2].parse().unwrap(),
+                    y: components[5].parse().unwrap(),
+                },
+                "letter" => Op::SwapLetter {
+                    x: components[2].chars().nth(0).unwrap(),
+                    y: components[5].chars().nth(0).unwrap(),
+                },
+                _ => unreachable!("no other variants of swap"),
+            },
+            "reverse" => Op::Reverse {
+                x: components[2].parse().unwrap(),
+                y: components[4].parse().unwrap(),
+            },
+            "rotate" => match components[1] {
+                "left" => Op::RotateLeft {
+                    x: components[2].parse().unwrap(),
+                },
+                "right" => Op::RotateRight {
+                    x: components[2].parse().unwrap(),
+                },
+                "based" => Op::RotateLetter {
+                    x: components[6].chars().nth(0).unwrap(),
+                },
+                _ => unreachable!("no other variants of rotate"),
+            },
+            "move" => Op::Move {
+                x: components[2].parse().unwrap(),
+                y: components[5].parse().unwrap(),
+            },
+            value => todo!("{}", value),
+        }
+    }
+}
+
 impl Op {
     fn apply(&self, text: &str) -> String {
         let mut letters: Vec<char> = text.chars().collect();
@@ -54,6 +95,7 @@ impl Op {
                 letters.insert(*y, moved);
             }
             Op::RotateLetter { x } => {
+                // rotate to right
                 let x_pos = letters.iter().position(|letter| *letter == *x).unwrap();
                 let length = letters.len();
                 for _ in 0..(1 + x_pos + if x_pos >= 4 { 1 } else { 0 }) {
@@ -70,14 +112,13 @@ impl Op {
     }
 
     fn get_reverted(&self, text: &str) -> Option<Op> {
-        let letters: Vec<char> = text.chars().collect();
         match self {
             Op::RotateLeft { x } => Some(Op::RotateRight { x: *x }),
             Op::RotateRight { x } => Some(Op::RotateLeft { x: *x }),
             Op::Move { x, y } => Some(Op::Move { x: *y, y: *x }),
             Op::RotateLetter { x } => {
-                let x_pos = letters.iter().position(|letter| *letter == *x).unwrap();
-                let length = letters.len();
+                let x_pos = text.find(*x).unwrap();
+                let length = text.len();
 
                 let mut solutions = vec![];
 
@@ -99,49 +140,10 @@ impl Op {
     }
 }
 
-fn parse_op(line: &str) -> Op {
-    let components: Vec<&str> = line.split_whitespace().collect();
-
-    match components[0] {
-        "swap" => match components[1] {
-            "position" => Op::SwapPos {
-                x: components[2].parse().unwrap(),
-                y: components[5].parse().unwrap(),
-            },
-            "letter" => Op::SwapLetter {
-                x: components[2].chars().nth(0).unwrap(),
-                y: components[5].chars().nth(0).unwrap(),
-            },
-            _ => unreachable!("no other variants of swap"),
-        },
-        "reverse" => Op::Reverse {
-            x: components[2].parse().unwrap(),
-            y: components[4].parse().unwrap(),
-        },
-        "rotate" => match components[1] {
-            "left" => Op::RotateLeft {
-                x: components[2].parse().unwrap(),
-            },
-            "right" => Op::RotateRight {
-                x: components[2].parse().unwrap(),
-            },
-            "based" => Op::RotateLetter {
-                x: components[6].chars().nth(0).unwrap(),
-            },
-            _ => unreachable!("no other variants of rotate"),
-        },
-        "move" => Op::Move {
-            x: components[2].parse().unwrap(),
-            y: components[5].parse().unwrap(),
-        },
-        value => todo!("{}", value),
-    }
-}
-
 fn read_input(filename: &str) -> Result<Vec<Op>, Box<dyn error::Error>> {
     let ops = fs::read_to_string(filename)?
         .lines()
-        .map(|line| parse_op(line))
+        .map(|line| Op::from(line))
         .collect();
 
     Ok(ops)
@@ -175,7 +177,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             for operation in scrambler_function.iter().rev() {
                 text = operation
                     .get_reverted(&text)
-                    .ok_or("unrevertable Op::RotateLetter")?
+                    .ok_or("ambiguous Op::RotateLetter")?
                     .apply(&text);
                 // println!("{:?} {}", operation, text);
             }
