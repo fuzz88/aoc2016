@@ -5,3 +5,9 @@ build:
 
 format:
 	rustfmt main.rs
+
+run:
+	@./main sample.txt abcde s
+	- @./main sample.txt decab u
+	@./main input.txt abcdefgh s
+	@./main input.txt fbgdceah u

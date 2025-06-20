@@ -69,17 +69,32 @@ impl Op {
         letters.iter().collect()
     }
 
-    fn revert(&self, text: &str) -> Op {
+    fn get_reverted(&self, text: &str) -> Option<Op> {
         let letters: Vec<char> = text.chars().collect();
         match self {
-            Op::RotateLeft { x } => Op::RotateRight { x: *x },
-            Op::RotateRight { x } => Op::RotateLeft { x: *x },
-            Op::Move { x, y } => Op::Move {x: *y, y: *x},
+            Op::RotateLeft { x } => Some(Op::RotateRight { x: *x }),
+            Op::RotateRight { x } => Some(Op::RotateLeft { x: *x }),
+            Op::Move { x, y } => Some(Op::Move { x: *y, y: *x }),
             Op::RotateLetter { x } => {
-                // let x_pos = letters.iter().position(|letter| *letter == *x).unwrap();
-                Op::RotateLetter {x: *x}
+                let x_pos = letters.iter().position(|letter| *letter == *x).unwrap();
+                let length = letters.len();
+
+                let mut solutions = vec![];
+
+                for i in 0..length {
+                    let shift = i + 1 + if i >= 4 { 1 } else { 0 };
+                    if (i + shift) % length == x_pos {
+                        solutions.push(shift);
+                    }
+                }
+
+                if solutions.len() != 1 {
+                    None
+                } else {
+                    Some(Op::RotateLeft { x: solutions[0] })
+                }
             }
-            op => op.clone(),
+            op => Some(op.clone()),
         }
     }
 }
@@ -145,21 +160,24 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let mode = env::args()
         .nth(3)
-        .ok_or("usage: ./main sample.txt abcdef scramble|unscramble")?;
+        .ok_or("no scrambler mode as cli argument is provided")?;
 
     let scrambler_function = read_input(&input_file)?;
 
     match mode.as_str() {
-        "scramble" => {
+        "s" => {
             for operation in scrambler_function {
                 text = operation.apply(&text);
-                println!("{:?} {}", operation, text);
+                // println!("{:?} {}", operation, text);
             }
         }
-        "unscramble" => {
+        "u" => {
             for operation in scrambler_function.iter().rev() {
-                text = operation.revert(&text).apply(&text);
-                println!("{:?} {}", operation, text);
+                text = operation
+                    .get_reverted(&text)
+                    .ok_or("unrevertable Op::RotateLetter")?
+                    .apply(&text);
+                // println!("{:?} {}", operation, text);
             }
         }
         _ => unreachable!("wrong mode"),
