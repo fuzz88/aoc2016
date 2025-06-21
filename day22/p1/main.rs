@@ -171,16 +171,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         curr_x = curr_x - 1;
         while curr_x >= 1 {
             // println!("{}", curr_x);
-            steps += shortest_path(
-                &graph,
-                (curr_x + 1, 0),
-                (curr_x - 1, 0),
-                (curr_x, 0),
-            );
+            steps += shortest_path(&graph, (curr_x + 1, 0), (curr_x - 1, 0), (curr_x, 0));
             steps += 1;
             curr_x = curr_x - 1;
         }
-        
 
         min_steps = min(steps, min_steps);
     }
