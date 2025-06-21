@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
 use std::error;
 use std::fs;
@@ -38,26 +38,62 @@ fn build_graph(nodes: &Vec<Node>) -> Graph {
     graph
 }
 
-fn get_neighbours(x_y: &(usize, usize), graph: &Graph) -> Vec<(usize, usize)> {
-    let mut neightbours = vec![];
+fn get_neighbours(graph: &Graph, x_y: &(usize, usize)) -> Vec<(usize, usize)> {
+    let mut neighbours = vec![];
     let x = x_y.0 as i32;
     let y = x_y.1 as i32;
 
+    // println!("{:?}", x_y);
+
     for dx in -1..=1 {
         for dy in -1..=1 {
-            if dx != 0 && dy != 0 {
+            if !(dx == 0 && dy == 0) && (dx == 0 || dy == 0) {
                 if x + dx >= 0 && y + dy >= 0 {
-                    let x = x as usize;
-                    let y = y as usize;
-                    if let Some(_) = graph.get(&(x, y)) {
-                        neightbours.push((x, y));
+                    // println!("{} {}", dx, dy);
+                    if let Some(_) = graph.get(&((dx + x) as usize, (dy + y) as usize)) {
+                        neighbours.push(((dx + x) as usize, (dy + y) as usize));
                     }
                 }
             }
         }
     }
 
-    neightbours
+    neighbours
+}
+
+fn walk_from_node(graph: &Graph, start: (usize, usize)) -> usize {
+    let mut visited = HashSet::new();
+    let mut processing = VecDeque::new();
+    let mut viable_count = 0;
+
+    processing.push_back(start);
+    visited.insert(start);
+
+    while !processing.is_empty() {
+        let current_node = processing.pop_front().expect("not empty queue");
+        let current_node_size = graph.get(&current_node).expect("valid node");
+
+        for neighbour in get_neighbours(graph, &current_node) {
+            if visited.contains(&neighbour) {
+                continue;
+            }
+
+            let neighbour_size = graph.get(&neighbour).expect("valid neighbour");
+
+            if neighbour_size.0 - neighbour_size.1 >= current_node_size.1
+                && current_node_size.1 != 0
+            {
+                println!("{:?} {:?}", current_node, current_node_size);
+                println!("    {:?} {:?}", neighbour, neighbour_size);
+                visited.insert(neighbour);
+                processing.push_back(neighbour);
+                viable_count += 1;
+            }
+        }
+    }
+
+    println!("viable count = {}", viable_count);
+    viable_count
 }
 
 fn read_input(filename: &str) -> Result<Vec<Node>, Box<dyn error::Error>> {
@@ -81,8 +117,21 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let input_data = read_input(&input_file)?;
     let graph = build_graph(&input_data);
+    let mut viable_count = 0;
 
-    println!("{graph:?}");
+    for (node_a, size_a) in &graph {
+        for (node_b, size_b) in &graph {
+            if node_a != node_b {
+                if size_a.1 != 0 {
+                    if size_a.1 <= size_b.0 - size_b.1 {
+                        viable_count += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    println!("{viable_count}");
 
     Ok(())
 }
