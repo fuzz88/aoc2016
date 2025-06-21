@@ -153,25 +153,34 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     }
     println!("{viable_count}");
 
-    let mut min_steps = 1_000_000;
+    let mut min_steps = usize::MAX;
 
     // println!("{max_x}");
 
     for start_point in start_points {
         let mut steps = 0;
         let mut curr_x = max_x;
-
+        // stepping near the target (from the left),
+        // without going through the target.
         steps += shortest_path(
             &graph,
             (start_point.0, start_point.1),
             (max_x - 1, 0),
             (curr_x, 0),
         );
+        // 1 step to reach the target
         steps += 1;
         curr_x = curr_x - 1;
+        // iteratively stepping near the target from the left
+        // going aroung the target without stepping on
         while curr_x >= 1 {
+            // next target is curr_x - 1 must be gte than 0, but we have curr_x
+            // as usize, so check against 1, to not have negative curr_x
+            // if next "from the left" is out of the field, then target now at (0,0)
+
             // println!("{}", curr_x);
             steps += shortest_path(&graph, (curr_x + 1, 0), (curr_x - 1, 0), (curr_x, 0));
+            // 1 step to reach target from the left
             steps += 1;
             curr_x = curr_x - 1;
         }
