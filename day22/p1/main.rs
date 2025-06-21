@@ -67,7 +67,6 @@ fn shortest_path(
     start: (usize, usize),
     end: (usize, usize),
     target: (usize, usize),
-    limit: usize,
 ) -> usize {
     let mut visited = HashSet::new();
     let mut processing = VecDeque::new();
@@ -78,6 +77,9 @@ fn shortest_path(
 
     while !processing.is_empty() {
         let current_node = processing.pop_front().expect("not empty queue");
+        let current_node_size = graph
+            .get(&(current_node.0, current_node.1))
+            .expect("valid node");
         if current_node.0 == end.0 && current_node.1 == end.1 {
             min_dist = min(current_node.2, min_dist);
         }
@@ -89,7 +91,7 @@ fn shortest_path(
 
             let neighbour_size = graph.get(&neighbour).expect("valid neighbour");
 
-            if neighbour_size.1 <= limit {
+            if neighbour_size.1 <= current_node_size.0 {
                 // println!("{:?} {:?}", current_node, current_node_size);
                 // println!("    {:?} {:?}", neighbour, neighbour_size);
                 visited.insert(neighbour);
@@ -140,7 +142,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 if size_a.1 != 0 {
                     if size_a.1 <= size_b.0 - size_b.1 {
                         if is_neighbours(node_a, node_b) {
-                            start_points.insert((node_b.0, node_b.1, size_b.0 - size_b.1));
+                            start_points.insert(node_b);
                             // println!("{:?} {:?} {:?} {:?}", node_a, size_a, node_b, size_b);
                         }
                         viable_count += 1;
@@ -164,7 +166,6 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             (start_point.0, start_point.1),
             (max_x - 1, 0),
             (curr_x, 0),
-            start_point.2,
         );
         steps += 1;
         curr_x = curr_x - 1;
@@ -175,11 +176,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 (curr_x + 1, 0),
                 (curr_x - 1, 0),
                 (curr_x, 0),
-                start_point.2,
             );
             steps += 1;
             curr_x = curr_x - 1;
         }
+        
 
         min_steps = min(steps, min_steps);
     }
