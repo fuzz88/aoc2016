@@ -26,7 +26,9 @@ impl From<&str> for Node {
     }
 }
 
-fn build_graph(nodes: &Vec<Node>) -> HashMap<(usize, usize), (usize, usize)> {
+type Graph = HashMap<(usize, usize), (usize, usize)>;
+
+fn build_graph(nodes: &Vec<Node>) -> Graph {
     let mut graph = HashMap::new();
 
     for node in nodes {
@@ -34,6 +36,28 @@ fn build_graph(nodes: &Vec<Node>) -> HashMap<(usize, usize), (usize, usize)> {
     }
 
     graph
+}
+
+fn get_neighbours(x_y: &(usize, usize), graph: &Graph) -> Vec<(usize, usize)> {
+    let mut neightbours = vec![];
+    let x = x_y.0 as i32;
+    let y = x_y.1 as i32;
+
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if dx != 0 && dy != 0 {
+                if x + dx >= 0 && y + dy >= 0 {
+                    let x = x as usize;
+                    let y = y as usize;
+                    if let Some(_) = graph.get(&(x, y)) {
+                        neightbours.push((x, y));
+                    }
+                }
+            }
+        }
+    }
+
+    neightbours
 }
 
 fn read_input(filename: &str) -> Result<Vec<Node>, Box<dyn error::Error>> {
