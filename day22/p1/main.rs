@@ -45,16 +45,16 @@ fn get_neighbours(graph: &Graph, x_y: &(usize, usize)) -> Vec<(usize, usize)> {
     let y = x_y.1 as i32;
 
     // println!("{:?}", x_y);
-
+    // is it cleaner as iterators and flat_map? see day13
     for dx in -1..=1 {
         for dy in -1..=1 {
-            if !(dx == 0 && dy == 0) && (dx == 0 || dy == 0) {
-                if x + dx >= 0 && y + dy >= 0 {
-                    // println!("{} {}", dx, dy);
-                    if let Some(_) = graph.get(&((dx + x) as usize, (dy + y) as usize)) {
-                        neighbours.push(((dx + x) as usize, (dy + y) as usize));
-                    }
-                }
+            if !(dx == 0 && dy == 0)
+                && (dx == 0 || dy == 0)
+                && x + dx >= 0
+                && y + dy >= 0
+                && graph.contains_key(&((dx + x) as usize, (dy + y) as usize))
+            {
+                neighbours.push(((dx + x) as usize, (dy + y) as usize));
             }
         }
     }
@@ -68,6 +68,11 @@ fn shortest_path(
     end: (usize, usize),
     target: (usize, usize),
 ) -> usize {
+    // bfs again
+    // "end" is the "end of the path" node.
+    // "target" is the node which contains disk which we want to transfer to (0, 0)-node.
+    // bfs must go around "target" node in a path, because we want to keep an eye on "target"'s content.
+
     let mut visited = HashSet::new();
     let mut processing = VecDeque::new();
     let mut min_dist = usize::MAX;
@@ -80,12 +85,15 @@ fn shortest_path(
         let current_node_size = graph
             .get(&(current_node.0, current_node.1))
             .expect("valid node");
+
+        let dist = current_node.2;
         if current_node.0 == end.0 && current_node.1 == end.1 {
-            min_dist = min(current_node.2, min_dist);
+            min_dist = min(dist, min_dist);
         }
+
         for neighbour in get_neighbours(graph, &(current_node.0, current_node.1)) {
-            if visited.contains(&neighbour) || (neighbour.0 == target.0 && neighbour.1 == target.1)
-            {
+            if visited.contains(&neighbour) || (neighbour == target) {
+                // already visited or "target" node.
                 continue;
             }
 
@@ -95,7 +103,7 @@ fn shortest_path(
                 // println!("{:?} {:?}", current_node, current_node_size);
                 // println!("    {:?} {:?}", neighbour, neighbour_size);
                 visited.insert(neighbour);
-                processing.push_back((neighbour.0, neighbour.1, current_node.2 + 1));
+                processing.push_back((neighbour.0, neighbour.1, dist + 1));
             }
         }
     }
@@ -138,16 +146,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     for (node_a, size_a) in &graph {
         max_x = max(max_x, node_a.0);
         for (node_b, size_b) in &graph {
-            if node_a != node_b {
-                if size_a.1 != 0 {
-                    if size_a.1 <= size_b.0 - size_b.1 {
-                        if is_neighbours(node_a, node_b) {
-                            start_points.insert(node_b);
-                            // println!("{:?} {:?} {:?} {:?}", node_a, size_a, node_b, size_b);
-                        }
-                        viable_count += 1;
-                    }
+            if node_a != node_b && size_a.1 != 0 && size_a.1 <= size_b.0 - size_b.1 {
+                if is_neighbours(node_a, node_b) {
+                    start_points.insert(node_b);
+                    // println!("{:?} {:?} {:?} {:?}", node_a, size_a, node_b, size_b);
                 }
+                viable_count += 1;
             }
         }
     }
@@ -159,32 +163,20 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     for start_point in start_points {
         let mut steps = 0;
-        let mut curr_x = max_x;
-        // stepping near the target (from the left),
-        // without going through the target.
-        steps += shortest_path(
-            &graph,
-            (start_point.0, start_point.1),
-            (max_x - 1, 0),
-            (curr_x, 0),
-        );
-        // 1 step to reach the target
-        steps += 1;
-        curr_x = curr_x - 1;
-        // iteratively stepping near the target from the left
-        // going aroung the target without stepping on
-        while curr_x >= 1 {
-            // next target is curr_x - 1 must be gte than 0, but we have curr_x
-            // as usize, so check against 1, to not have negative curr_x
-            // if next "from the left" is out of the field, then target now at (0,0)
+        let mut current_start = *start_point;
+        let mut current_target_x = max_x;
 
-            // println!("{}", curr_x);
-            steps += shortest_path(&graph, (curr_x + 1, 0), (curr_x - 1, 0), (curr_x, 0));
-            // 1 step to reach target from the left
+        while current_target_x >= 1 {
+            let current_end = (current_target_x - 1, 0);
+            let current_target = (current_target_x, 0);
+            // stepping near the target (from the left),
+            // without going through the target.
+            steps += shortest_path(&graph, current_start, current_end, current_target);
+            // 1 step to reach the target
             steps += 1;
-            curr_x = curr_x - 1;
+            current_target_x = current_target_x - 1;
+            current_start = (current_target_x + 1, 0);
         }
-
         min_steps = min(steps, min_steps);
     }
 
