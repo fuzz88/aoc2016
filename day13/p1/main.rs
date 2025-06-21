@@ -20,10 +20,10 @@ fn search_path_and_count_dist(
     // bfs
     // hope it will stop on this infinite maze
 
-    let mut visited: HashSet<(i32, i32)> = HashSet::new();
-    let mut for_processing: VecDeque<(i32, i32, u32)> = VecDeque::new();
+    let mut visited = HashSet::new();
+    let mut for_processing = VecDeque::new();
 
-    let mut min_dist = 1_000_000;
+    let mut min_dist = u32::MAX;
     let mut count = 0;
 
     for_processing.push_back((x, y, 0));
@@ -66,8 +66,7 @@ fn search_path_and_count_dist(
 fn main() {
     println!("--- Day 13: A Maze of Twisty Little Cibicles ---");
 
-    println!(
-        "{:?}",
-        search_path_and_count_dist(1, 1, 31, 39, 50, make_is_wall(1358))
-    );
+    let solution = search_path_and_count_dist(1, 1, 31, 39, 50, make_is_wall(1358));
+
+    println!("{}\n{}", solution.0, solution.1);
 }
