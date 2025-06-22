@@ -87,7 +87,8 @@ fn shortest_path(
             .expect("valid node");
 
         let dist = current_node.2;
-        if current_node.0 == end.0 && current_node.1 == end.1 {
+
+        if (current_node.0, current_node.1) == end {
             min_dist = min(dist, min_dist);
         }
 
