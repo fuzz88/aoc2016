@@ -2,13 +2,6 @@ use std::env;
 use std::fmt;
 use std::fs;
 use std::io;
-use std::sync::{OnceLock, RwLock};
-
-static ELEMENTS: OnceLock<RwLock<Vec<String>>> = OnceLock::new();
-
-fn get_elements() -> &'static RwLock<Vec<String>> {
-    ELEMENTS.get_or_init(|| RwLock::new(vec![]))
-}
 
 #[derive(Debug)]
 enum ItemType {
@@ -16,24 +9,11 @@ enum ItemType {
     Generator,
 }
 
+#[derive(Debug)]
 struct Item {
     item_type: ItemType,
-    element_id: usize,
+    element: String,
     floor: u32,
-}
-
-impl fmt::Debug for Item {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let elements = get_elements().read().unwrap();
-        let name = &elements[self.element_id];
-
-        f.debug_struct("Item")
-            .field("item_type", &self.item_type)
-            .field("element_id", &self.element_id)
-            .field("(debug) elements_name", name)
-            .field("floor", &self.floor)
-            .finish()
-    }
 }
 
 fn main() -> Result<(), io::Error> {
@@ -44,10 +24,14 @@ fn main() -> Result<(), io::Error> {
         "no input filename as cli argument",
     ))?;
 
-    let input_data = read_input(&input_file)?;
+    let mut input_data = read_input(&input_file)?;
     println!("{:#?}", input_data);
 
-    println!("{}", solver(&input_data));
+    elevator(&mut input_data, [Some(0), Some(1)], 2);
+
+    println!("{:#?}", input_data);
+
+    // println!("{}", solver(&input_data));
 
     Ok(())
 }
@@ -85,16 +69,25 @@ fn solver(items: &Vec<Item>) -> u32 {
         .expect("expecting at least one solution to be found")
 }
 
-fn take_elevator(items: Vec<Item>, idxs_to_move: [usize; 2], end_floor: u32) -> bool {
+fn elevator(items: &mut Vec<Item>, idxs: [Option<usize>; 2], end_floor: u32) -> bool { 
+    // takes two or one item and tries to move it to target floor
+    if let Some(id1) = idxs[0] {
+        let item1 = items.get_mut(id1).unwrap();
+        item1.floor = end_floor;
+    }
+    if let Some(id2) = idxs[1] {
+        let item2 = items.get_mut(id2).unwrap();
+        item2.floor = end_floor;
+    }
     true
 }
 
-fn floor_items(items: Vec<Item>, floor: u32) -> Vec<Item> {
-    items
-        .into_iter()
-        .filter(|item| item.floor == floor)
-        .collect()
-}
+// fn floor_items(items: &Vec<Item>, floor: u32) -> Vec<Item> {
+//     items
+//         .into_iter()
+//         .filter(|item| item.floor == floor)
+//         .collect()
+// }
 
 fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
     let items = fs::read_to_string(filename)?
@@ -104,15 +97,6 @@ fn read_input(filename: &str) -> Result<Vec<Item>, io::Error> {
         .collect();
 
     Ok(items)
-}
-
-fn element_id(name: &str) -> usize {
-    let mut elements = get_elements().write().unwrap();
-    if let Some(idx) = elements.iter().position(|el| el == name) {
-        return idx;
-    }
-    elements.push(name.to_string());
-    elements.len() - 1
 }
 
 fn parse_line(line: &str) -> Vec<Item> {
@@ -131,17 +115,15 @@ fn parse_line(line: &str) -> Vec<Item> {
     components[2..].windows(2).for_each(|pair| match pair {
         [element_name, "generator," | "generator." | "generator"] => items.push(Item {
             item_type: ItemType::Generator,
-            element_id: element_id(element_name),
+            element: element_name.to_string(),
             floor,
         }),
         [element_name, "microchip," | "microchip." | "microchip"] => items.push(Item {
             item_type: ItemType::Microchip,
-            element_id: element_id(
-                element_name
-                    .split("-")
-                    .nth(0)
-                    .expect("expecting dash in the type name of microchip"),
-            ),
+            element: element_name
+                .split("-")
+                .nth(0)
+                .expect("expecting dash in the type name of microchip").to_string(),
             floor,
         }),
         _ => {}
