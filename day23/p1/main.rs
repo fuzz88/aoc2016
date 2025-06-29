@@ -128,8 +128,13 @@ impl Machine {
                             Instruction::INC(op) => Instruction::DEC(*op),
                             Instruction::DEC(op) => Instruction::INC(*op),
                             Instruction::TGL(op) => Instruction::INC(*op),
-                            Instruction::CPY { value: x, dst: y } => Instruction::JNZ { cond: *x, count: *y },
-                            Instruction::JNZ { cond: x, count: y } => Instruction::CPY { value: *x, dst: *y },
+                            Instruction::CPY { value: x, dst: y } => Instruction::JNZ {
+                                cond: *x,
+                                count: *y,
+                            },
+                            Instruction::JNZ { cond: x, count: y } => {
+                                Instruction::CPY { value: *x, dst: *y }
+                            }
                         }
                     }
                 }
