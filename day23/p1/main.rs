@@ -2,7 +2,7 @@ use std::env;
 use std::error::Error;
 use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Reg {
     A,
     B,
@@ -21,19 +21,19 @@ impl Reg {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Op {
     Register(Reg),
     Number(i32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Instruction {
     CPY { value: Op, dst: Op },
     INC(Op),
     DEC(Op),
     JNZ { cond: Op, count: Op },
-    TGL { x: Op },
+    TGL(Op),
 }
 
 struct Parser {
@@ -92,6 +92,7 @@ impl Iterator for Parser {
                     cond: self.parse_next_token_as_operand(),
                     count: self.parse_next_token_as_operand(),
                 },
+                "tgl" => Instruction::TGL(self.parse_next_token_as_operand()),
                 unknown => todo!("parsed unknown instruction: {:?}", unknown),
             })
         }
@@ -111,10 +112,27 @@ impl Machine {
         }
     }
 
-    fn run(&mut self, program: &Vec<Instruction>) {
+    fn run(&mut self, program: &mut Vec<Instruction>) {
         while self.pc < program.len() {
             match &program[self.pc] {
-                Instruction::TGL { .. } => todo!(),
+                Instruction::TGL(op) => {
+                    let tgl_jmp = match op {
+                        Op::Number(n) => *n,
+                        Op::Register(reg) => self.registers[reg.idx()],
+                    };
+                    let tgl_dst = (self.pc as i32 + tgl_jmp) as usize;
+                    if tgl_dst > 0 && tgl_dst < program.len() {
+                        let to_patch = &program[tgl_dst];
+
+                        program[tgl_dst] = match to_patch {
+                            Instruction::INC(op) => Instruction::DEC(*op),
+                            Instruction::DEC(op) => Instruction::INC(*op),
+                            Instruction::TGL(op) => Instruction::INC(*op),
+                            Instruction::CPY { value: x, dst: y } => Instruction::JNZ { cond: *x, count: *y },
+                            Instruction::JNZ { cond: x, count: y } => Instruction::CPY { value: *x, dst: *y },
+                        }
+                    }
+                }
                 Instruction::INC(op) => match op {
                     Op::Number(_) => {}
                     Op::Register(reg) => self.registers[reg.idx()] += 1,
@@ -135,16 +153,21 @@ impl Machine {
                 Instruction::JNZ { cond, count } => match cond {
                     Op::Register(reg) => {
                         if self.registers[reg.idx()] != 0 {
-                            if let Op::Number(count) = count {
-                                self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
+                            let count = match count {
+                                Op::Number(count) => *count,
+                                Op::Register(reg) => self.registers[reg.idx()],
+                            };
+                            self.pc = (self.pc as i32 + count - 1) as usize;
                         };
                     }
                     Op::Number(value) => {
+                        // println!("jnz {}", *value);
                         if *value != 0 {
-                            if let Op::Number(count) = count {
-                                self.pc = (self.pc as i32 + count - 1) as usize;
-                            }
+                            let count = match count {
+                                Op::Number(count) => *count,
+                                Op::Register(reg) => self.registers[reg.idx()],
+                            };
+                            self.pc = (self.pc as i32 + count - 1) as usize;
                         };
                     }
                 },
@@ -162,18 +185,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         .nth(1)
         .ok_or("expecting input file name as cli argument")?;
 
-    let program = Parser::tokenize(&input_file)?.collect::<Vec<Instruction>>();
+    let mut program = Parser::tokenize(&input_file)?.collect::<Vec<Instruction>>();
 
-    println!("{:?}", program);
+    // println!("{:#?}", program);
 
-    // let mut machine = Machine::new();
-    // machine.run(&program);
-    // println!("{}", machine.registers[Reg::A.idx()]);
+    let mut machine = Machine::new();
+    machine.registers[Reg::A.idx()] = 7;
+    machine.run(&mut program.clone());
+    // println!("{:#?}", program);
+    println!("{}", machine.registers[Reg::A.idx()]);
 
-    // let mut machine = Machine::new();
-    // machine.registers[Reg::C.idx()] = 1;
-    // machine.run(&program);
-    // println!("{}", machine.registers[Reg::A.idx()]);
+    let mut machine = Machine::new();
+    machine.registers[Reg::A.idx()] = 12;
+    machine.run(&mut program);
+    println!("{}", machine.registers[Reg::A.idx()]);
 
     Ok(())
 }
