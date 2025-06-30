@@ -184,7 +184,7 @@ impl Machine {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("--- Day 12: Leonardo's Monorail ---");
+    println!("--- Day 23: Safe Cracking ---");
 
     let input_file = env::args()
         .nth(1)
