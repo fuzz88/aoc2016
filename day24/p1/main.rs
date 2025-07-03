@@ -40,20 +40,47 @@ fn read_input(filename: &str) -> Result<Field, Box<dyn error::Error>> {
     Ok(locations)
 }
 
-fn get_xy(row: usize, col: usize, map: &Map) -> Loc {
-    map.field[col + row * map.cols]
+fn get_xy(col: i32, row: i32, map: &Map) -> Loc {
+    map.field[col as usize + row as usize * map.cols]
 }
 
-fn calculate_poi_routes(row: usize, col: usize, map: &Map) -> Routes {
+fn calculate_poi_routes(col: i32, row: i32, map: &Map) -> Routes {
     let mut routes = HashMap::new();
-    let mut visited = HashSet::<(usize, usize)>::new();
-    let mut to_visit = VecDeque::<(usize, usize, u32)>::new();
+    let mut visited = HashSet::<(i32, i32)>::new();
+    let mut to_visit = VecDeque::<(i32, i32, u32)>::new();
 
-    visited.insert((row, col));
-    to_visit.push_back((row, col, 0));
+    let ng = vec![(1, 0), (0, 1), (-1, 0), (0, -1)];
+
+    visited.insert((col, row));
+    to_visit.push_back((col, row, 0));
 
     loop {
         if let Some(next_loc) = to_visit.pop_front() {
+            let x = next_loc.0;
+            let y = next_loc.1;
+
+            for idx in 0..4 {
+                let dx = ng[idx].0;
+                let dy = ng[idx].1;
+                let nx = x + dx;
+                let ny = y + dy;
+                if nx > 0 && ny > 0 && ny < map.rows as i32 && nx < map.cols as i32 {
+                    if !visited.contains(&(nx, ny)) {
+                        match get_xy(nx as i32, ny as i32, map) {
+                            Loc::Wall => {}
+                            Loc::Open => {
+                                visited.insert((nx, ny));
+                                to_visit.push_back((nx, ny, next_loc.2));
+                            }
+                            Loc::POI(poi) => {
+                                visited.insert((nx, ny));
+                                to_visit.push_back((nx, ny, next_loc.2));
+                                // add route length from (col, row) to this poi
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             break;
         }
@@ -65,11 +92,11 @@ fn calculate_poi_routes(row: usize, col: usize, map: &Map) -> Routes {
 fn calculate_routes(map: &Map) -> Routes {
     let mut routes = HashMap::new();
 
-    for row in 0..map.rows {
-        for col in 0..map.cols {
-            match get_xy(row, col, map) {
+    for col in 0..map.cols {
+        for row in 0..map.rows {
+            match get_xy(col as i32, row as i32, map) {
                 Loc::POI(num) => {
-                    let poi_routes: Routes = calculate_poi_routes(row, col, map);
+                    let poi_routes: Routes = calculate_poi_routes(col as i32, row as i32, map);
                     println!("{poi_routes:?}");
                 }
                 _ => {}
