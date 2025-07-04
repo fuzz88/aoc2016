@@ -166,10 +166,10 @@ fn find_shortest_path1(routes: &Routes) -> u32 {
                         if let Some(dist) = dists.get(p2) {
                             *dist
                         } else {
-                            0
+                            unreachable!("broken premutations");
                         }
                     } else {
-                        0
+                        unreachable!("broken permutations");
                     }
                 })
                 .sum()
@@ -193,10 +193,10 @@ fn find_shortest_path2(routes: &Routes) -> u32 {
                         if let Some(dist) = dists.get(p2) {
                             *dist
                         } else {
-                            0
+                            unreachable!("broken permutations");
                         }
                     } else {
-                        0
+                        unreachable!("broken permutations");
                     }
                 })
                 .sum()
