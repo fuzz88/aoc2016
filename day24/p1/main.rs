@@ -1,3 +1,4 @@
+#![feature(iter_map_windows)]
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::env;
 use std::error;
@@ -67,7 +68,9 @@ fn calculate_poi_routes(col: i32, row: i32, map: &Map, from_poi: u8) -> Routes {
                 if nx > 0 && ny > 0 && ny < map.rows as i32 && nx < map.cols as i32 {
                     if !visited.contains(&(nx, ny)) {
                         match get_xy(nx as i32, ny as i32, map) {
-                            Loc::Wall => {}
+                            Loc::Wall => {
+                                continue;
+                            }
                             Loc::Open => {
                                 visited.insert((nx, ny));
                                 to_visit.push_back((nx, ny, next_loc.2 + 1));
@@ -112,6 +115,97 @@ fn calculate_routes(map: &Map) -> Routes {
     routes
 }
 
+// https://en.wikipedia.org/wiki/Heap%27s_algorithm
+//
+fn permutations<T: Copy>(v: &mut Vec<T>) -> Vec<Vec<T>> {
+    let n = v.len();
+    let mut results = vec![];
+    let mut c = vec![];
+
+    (0..n).for_each(|_| {
+        c.push(0);
+    });
+
+    results.push(v.clone());
+
+    let mut i = 1;
+
+    while i < n {
+        if c[i] < i {
+            if i % 2 == 0 {
+                let t = v[0];
+                v[0] = v[i];
+                v[i] = t;
+            } else {
+                let t = v[c[i]];
+                v[c[i]] = v[i];
+                v[i] = t;
+            }
+            results.push(v.clone());
+            c[i] += 1;
+            i = 1;
+        } else {
+            c[i] = 0;
+            i += 1;
+        }
+    }
+
+    results
+}
+
+fn find_shortest_path1(routes: &Routes) -> u32 {
+    let mut pois = routes.keys().map(|p| *p).collect();
+
+    let shortest_path = permutations(&mut pois)
+        .iter()
+        .filter(|p| p[0] == 0)
+        .map(|path| {
+            path.iter()
+                .map_windows(|[p1, p2]| {
+                    if let Some(dists) = routes.get(p1) {
+                        if let Some(dist) = dists.get(p2) {
+                            *dist
+                        } else {
+                            0
+                        }
+                    } else {
+                        0
+                    }
+                })
+                .sum()
+        })
+        .min();
+
+    shortest_path.expect("non-empty iterators")
+}
+
+fn find_shortest_path2(routes: &Routes) -> u32 {
+    let mut pois: Vec<u8> = routes.keys().map(|p| *p).collect();
+    pois.push(0);
+
+    let shortest_path = permutations(&mut pois)
+        .iter()
+        .filter(|p| p[0] == 0 && p[p.len() - 1] == 0)
+        .map(|path| {
+            path.iter()
+                .map_windows(|[p1, p2]| {
+                    if let Some(dists) = routes.get(p1) {
+                        if let Some(dist) = dists.get(p2) {
+                            *dist
+                        } else {
+                            0
+                        }
+                    } else {
+                        0
+                    }
+                })
+                .sum()
+        })
+        .min();
+
+    shortest_path.expect("non-empty iterators")
+}
+
 fn main() -> Result<(), Box<dyn error::Error>> {
     println!("--- Day 24: Air Duct Spelunking ---");
 
@@ -133,7 +227,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let routes = calculate_routes(&map);
 
-    println!("{routes:?}");
+    let shortest_path1 = find_shortest_path1(&routes);
+    let shortest_path2 = find_shortest_path2(&routes);
+
+    // println!("{routes:#?}");
+    println!("{shortest_path1}");
+    println!("{shortest_path2}");
 
     Ok(())
 }
