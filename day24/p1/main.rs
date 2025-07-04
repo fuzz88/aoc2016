@@ -44,7 +44,7 @@ fn get_xy(col: i32, row: i32, map: &Map) -> Loc {
     map.field[col as usize + row as usize * map.cols]
 }
 
-fn calculate_poi_routes(col: i32, row: i32, map: &Map) -> Routes {
+fn calculate_poi_routes(col: i32, row: i32, map: &Map, from_poi: u8) -> Routes {
     let mut routes = HashMap::new();
     let mut visited = HashSet::<(i32, i32)>::new();
     let mut to_visit = VecDeque::<(i32, i32, u32)>::new();
@@ -52,7 +52,7 @@ fn calculate_poi_routes(col: i32, row: i32, map: &Map) -> Routes {
     let ng = vec![(1, 0), (0, 1), (-1, 0), (0, -1)];
 
     visited.insert((col, row));
-    to_visit.push_back((col, row, 0));
+    to_visit.push_back((col, row, 0)); // cow, row, dist
 
     loop {
         if let Some(next_loc) = to_visit.pop_front() {
@@ -70,12 +70,15 @@ fn calculate_poi_routes(col: i32, row: i32, map: &Map) -> Routes {
                             Loc::Wall => {}
                             Loc::Open => {
                                 visited.insert((nx, ny));
-                                to_visit.push_back((nx, ny, next_loc.2));
+                                to_visit.push_back((nx, ny, next_loc.2 + 1));
                             }
                             Loc::POI(poi) => {
-                                visited.insert((nx, ny));
-                                to_visit.push_back((nx, ny, next_loc.2));
                                 // add route length from (col, row) to this poi
+                                let poi_route = routes.entry(from_poi).or_insert(HashMap::new());
+                                poi_route.insert(poi, next_loc.2 + 1);
+
+                                visited.insert((nx, ny));
+                                to_visit.push_back((nx, ny, next_loc.2 + 1));
                             }
                         }
                     }
@@ -95,9 +98,11 @@ fn calculate_routes(map: &Map) -> Routes {
     for col in 0..map.cols {
         for row in 0..map.rows {
             match get_xy(col as i32, row as i32, map) {
-                Loc::POI(num) => {
-                    let poi_routes: Routes = calculate_poi_routes(col as i32, row as i32, map);
-                    println!("{poi_routes:?}");
+                Loc::POI(poi) => {
+                    let poi_routes: Routes = calculate_poi_routes(col as i32, row as i32, map, poi);
+                    poi_routes.iter().for_each(|(p, r)| {
+                        routes.insert(*p, r.clone());
+                    });
                 }
                 _ => {}
             }
