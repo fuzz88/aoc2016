@@ -55,40 +55,36 @@ fn calculate_poi_routes(col: i32, row: i32, map: &Map, from_poi: u8) -> Routes {
     visited.insert((col, row));
     to_visit.push_back((col, row, 0)); // cow, row, dist
 
-    loop {
-        if let Some(next_loc) = to_visit.pop_front() {
-            let x = next_loc.0;
-            let y = next_loc.1;
+    while let Some(next_loc) = to_visit.pop_front() {
+        let x = next_loc.0;
+        let y = next_loc.1;
 
-            for idx in 0..4 {
-                let dx = ng[idx].0;
-                let dy = ng[idx].1;
-                let nx = x + dx;
-                let ny = y + dy;
-                if nx > 0 && ny > 0 && ny < map.rows as i32 && nx < map.cols as i32 {
-                    if !visited.contains(&(nx, ny)) {
-                        match get_xy(nx as i32, ny as i32, map) {
-                            Loc::Wall => {
-                                continue;
-                            }
-                            Loc::Open => {
-                                visited.insert((nx, ny));
-                                to_visit.push_back((nx, ny, next_loc.2 + 1));
-                            }
-                            Loc::POI(poi) => {
-                                // add route length from (col, row) to this poi
-                                let poi_route = routes.entry(from_poi).or_insert(HashMap::new());
-                                poi_route.insert(poi, next_loc.2 + 1);
+        for idx in 0..4 {
+            let dx = ng[idx].0;
+            let dy = ng[idx].1;
+            let nx = x + dx;
+            let ny = y + dy;
+            if nx > 0 && ny > 0 && ny < map.rows as i32 && nx < map.cols as i32 {
+                if !visited.contains(&(nx, ny)) {
+                    match get_xy(nx as i32, ny as i32, map) {
+                        Loc::Wall => {
+                            continue;
+                        }
+                        Loc::Open => {
+                            visited.insert((nx, ny));
+                            to_visit.push_back((nx, ny, next_loc.2 + 1));
+                        }
+                        Loc::POI(poi) => {
+                            // add route length from (col, row) to this poi
+                            let poi_route = routes.entry(from_poi).or_insert(HashMap::new());
+                            poi_route.insert(poi, next_loc.2 + 1);
 
-                                visited.insert((nx, ny));
-                                to_visit.push_back((nx, ny, next_loc.2 + 1));
-                            }
+                            visited.insert((nx, ny));
+                            to_visit.push_back((nx, ny, next_loc.2 + 1));
                         }
                     }
                 }
             }
-        } else {
-            break;
         }
     }
 
