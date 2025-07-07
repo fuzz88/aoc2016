@@ -27,15 +27,21 @@ fn main() -> Result<(), io::Error> {
     let mut input_data = read_input(&input_file)?;
     println!("{:#?}", input_data);
 
-    println!("{:#?}", items_to_vec(&input_data));
+    let field = items_to_vec(&input_data);
+    println!("{:#?}", field);
 
-    // println!("{}", solver(&input_data));
+    println!("{}", solver(&field));
 
     Ok(())
 }
 
+fn solver(field: &Vec<u32>) -> u32 {
+    field.iter().map(|floor| 4 - floor).sum()
+}
+
 fn items_to_vec(items: &Vec<Item>) -> Vec<u32> {
     let mut results = vec![];
+    results.push(1); // elevator
     let mut items = items.clone();
     items.sort_by_key(|item| item.item_type.clone());
     items.sort_by_key(|item| item.element.clone());
@@ -88,7 +94,8 @@ fn parse_line(line: &str) -> Vec<Item> {
             element: element_name
                 .split("-")
                 .nth(0)
-                .expect("expecting dash in the type name of microchip").to_string(),
+                .expect("expecting dash in the type name of microchip")
+                .to_string(),
             floor,
         }),
         _ => {}
