@@ -101,10 +101,6 @@ fn solver(state: &Vec<u32>) -> u32 {
 
         let elevator = current_state.pop().unwrap();
 
-        if elevator < 1 || elevator > 4 {
-            continue;
-        }
-
         if current_state.iter().all(|item| *item == 4) {
             if steps < min_steps {
                 min_steps = steps;
@@ -124,50 +120,55 @@ fn solver(state: &Vec<u32>) -> u32 {
             }
             // println!("{:#?}", can_move);
 
-            for i in 0..can_move.len() {
-                let mut state = current_state.clone();
-                state[can_move[i]] += 1;
-                state.push(elevator + 1);
-                state.push(steps + 1);
-                // println!("{:?}", state);
-                to_process.push_back(state);
-            }
-            for i in 0..can_move.len() {
-                let mut state = current_state.clone();
-                state[can_move[i]] -= 1;
-                state.push(elevator - 1);
-                state.push(steps + 1);
-                // println!("{:?}", state);
-                to_process.push_back(state);
-            }
-
-            for i in 0..can_move.len() {
-                for j in 0..can_move.len() {
-                    if i != j {
-                        let mut state = current_state.clone();
-                        state[can_move[i]] += 1;
-                        state[can_move[j]] += 1;
-                        state.push(elevator + 1);
-                        state.push(steps + 1);
-                        // println!("{:?}", state);
-                        to_process.push_back(state);
+            if elevator + 1 <= 4 {
+                for i in 0..can_move.len() {
+                    let mut state = current_state.clone();
+                    state[can_move[i]] += 1;
+                    state.push(elevator + 1);
+                    state.push(steps + 1);
+                    // println!("{:?}", state);
+                    to_process.push_back(state);
+                }
+                for i in 0..can_move.len() {
+                    for j in 0..can_move.len() {
+                        if i != j {
+                            let mut state = current_state.clone();
+                            state[can_move[i]] += 1;
+                            state[can_move[j]] += 1;
+                            state.push(elevator + 1);
+                            state.push(steps + 1);
+                            // println!("{:?}", state);
+                            to_process.push_back(state);
+                        }
                     }
                 }
             }
 
-            for i in 0..can_move.len() {
-                for j in 0..can_move.len() {
-                    if i != j {
-                        let mut state = current_state.clone();
-                        state[can_move[i]] -= 1;
-                        state[can_move[j]] -= 1;
-                        state.push(elevator - 1);
-                        state.push(steps + 1);
-                        // println!("{:?}", state);
-                        to_process.push_back(state);
+            if elevator - 1 >= 1 {
+                for i in 0..can_move.len() {
+                    let mut state = current_state.clone();
+                    state[can_move[i]] -= 1;
+                    state.push(elevator - 1);
+                    state.push(steps + 1);
+                    // println!("{:?}", state);
+                    to_process.push_back(state);
+                }
+
+                for i in 0..can_move.len() {
+                    for j in 0..can_move.len() {
+                        if i != j {
+                            let mut state = current_state.clone();
+                            state[can_move[i]] -= 1;
+                            state[can_move[j]] -= 1;
+                            state.push(elevator - 1);
+                            state.push(steps + 1);
+                            // println!("{:?}", state);
+                            to_process.push_back(state);
+                        }
                     }
                 }
             }
+
             // println!("--------------------------------------");
         }
     }
