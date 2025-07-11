@@ -160,7 +160,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .nth(1)
         .ok_or("expecting input file name as cli argument")?;
 
-    let program = Parser::tokenize(&input_file)?.collect::<Vec<Instruction>>();
+    let program = Parser::tokenize(&input_file)?.collect();
 
     let mut machine = Machine::new();
     machine.run(&program);
