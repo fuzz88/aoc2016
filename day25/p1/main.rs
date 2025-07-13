@@ -232,5 +232,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         machine.registers[Reg::A.idx()] = i;
         machine.run(&mut program);
     }
+
+    // guess it's better to analyze input.txt program.
+    // but this solution is ok, because we can check answer anyway.
     Ok(())
 }
